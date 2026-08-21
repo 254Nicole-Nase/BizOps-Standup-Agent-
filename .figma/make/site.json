@@ -1,0 +1,10 @@
+{
+  "description": "Automates weekly task updates by analyzing Notion data and posting executive summaries to Slack, saving project managers time and highlighting blockers.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
