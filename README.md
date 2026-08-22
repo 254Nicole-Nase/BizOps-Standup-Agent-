@@ -14,8 +14,10 @@ The system is designed to:
 
 ## What Is Implemented in This App
 
-- Interactive BizOps control center UI.
-- Agent workflow simulation: Ingest -> Analyze -> Compose -> Publish.
+- Full-stack Node.js Express backend API (`server.ts`).
+- Interactive BizOps control center UI wired to the backend API.
+- Actual AI integration using the `@google/genai` SDK to generate executive briefs from mock Notion data.
+- Agent workflow execution: Ingest -> Analyze -> Compose -> Publish.
 - Configurable run settings:
 	- cadence
 	- Notion database
@@ -29,11 +31,10 @@ The system is designed to:
 - Blocker triage tab with severity, owner, age, and next action.
 - Run log tab with timeline output.
 - Hours-saved calculator with monthly and annual savings estimation.
-- "What Is Missing to Ship" section for production-readiness priorities.
 
 ## What Is Still Missing to Ship in Production
 
-- Real API integrations and credentials flow for Notion and Slack.
+- Real API integrations and credentials flow for Notion and Slack (currently simulated in `server.ts`).
 - Secure secret management and token rotation.
 - Retry strategy and dead-letter handling for failed API operations.
 - Persistent storage for run history, confidence trends, and blocker analytics.
@@ -41,24 +42,19 @@ The system is designed to:
 
 ## Suggested Real Stack
 
-- Python backend
-- CrewAI or LangGraph orchestration
-- Gemini API for analysis and summary generation
+- Node.js/TypeScript backend (Express)
+- Gemini API for analysis and summary generation (`@google/genai`)
 - Notion API as the source of truth
 - Slack API for publishing
 
 ## Local Development
 
-1. Install dependencies.
-2. Start the Vite app.
-3. Use the UI to simulate weekly standup runs and tune thresholds.
+1. Add your `GEMINI_API_KEY` to the `.env` file.
+2. Install dependencies.
+3. Start the Vite app.
+4. Use the UI to run weekly standup analyses.
 
 Example commands:
 
 - `npm install`
 - `npm run dev`
-
-If you use pnpm:
-
-- `pnpm install`
-- `pnpm dev`

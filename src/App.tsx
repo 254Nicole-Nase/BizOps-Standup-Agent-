@@ -4,68 +4,68 @@ import {
   type ChangeEvent,
   type Dispatch,
   type SetStateAction,
-} from "react";
+} from "react"
 
-type RunState = "idle" | "running" | "ready" | "posted";
-type ActiveTab = "brief" | "blockers" | "log";
-type LogLevel = "info" | "success" | "warn";
-type TaskStatus = "done" | "in_progress" | "blocked" | "at_risk";
-type Severity = "high" | "medium" | "low";
-type IntegrationStatus = "connected" | "pending";
-type GapStatus = "missing" | "next" | "advanced";
+type RunState = "idle" | "running" | "ready" | "posted"
+type ActiveTab = "brief" | "blockers" | "log"
+type LogLevel = "info" | "success" | "warn"
+type TaskStatus = "done" | "in_progress" | "blocked" | "at_risk"
+type Severity = "high" | "medium" | "low"
+type IntegrationStatus = "connected" | "pending"
+type GapStatus = "missing" | "next" | "advanced"
 
 interface TaskUpdate {
-  project: string;
-  owner: string;
-  status: TaskStatus;
-  progress: number;
-  blocker?: string;
-  blockerAgeDays?: number;
+  project: string
+  owner: string
+  status: TaskStatus
+  progress: number
+  blocker?: string
+  blockerAgeDays?: number
 }
 
 interface BlockerItem {
-  project: string;
-  owner: string;
-  summary: string;
-  severity: Severity;
-  ageDays: number;
-  recommendedAction: string;
+  project: string
+  owner: string
+  summary: string
+  severity: Severity
+  ageDays: number
+  recommendedAction: string
 }
 
 interface PipelinePhase {
-  id: string;
-  label: string;
-  agent: string;
-  description: string;
-  doneMessage: string;
+  id: string
+  label: string
+  agent: string
+  description: string
+  doneMessage: string
 }
 
 interface Integration {
-  name: string;
-  detail: string;
-  status: IntegrationStatus;
+  name: string
+  detail: string
+  status: IntegrationStatus
 }
 
 interface ShipGap {
-  title: string;
-  impact: string;
-  status: GapStatus;
+  title: string
+  impact: string
+  status: GapStatus
 }
 
 interface LogEntry {
-  time: string;
-  level: LogLevel;
-  message: string;
+  time: string
+  level: LogLevel
+  message: string
 }
 
 interface WorkflowSettings {
-  cadence: string;
-  notionDatabase: string;
-  slackChannel: string;
-  model: string;
-  orchestration: "CrewAI" | "LangGraph";
-  minConfidence: number;
-  highBlockerLimit: number;
+  cadence: string
+  notionDatabase: string
+  slackChannel: string
+  model: string
+  orchestration: "CrewAI" | "LangGraph"
+  minConfidence: number
+  highBlockerLimit: number
 }
 
 const PIPELINE_PHASES: PipelinePhase[] = [
@@ -87,7 +87,8 @@ const PIPELINE_PHASES: PipelinePhase[] = [
     id: "compose",
     label: "Compose Executive Brief",
     agent: "Writer Agent",
-    description: "Generate concise leadership summary with recommended actions.",
+    description:
+      "Generate concise leadership summary with recommended actions.",
     doneMessage: "Slack-ready brief generated with risk callouts.",
   },
   {
@@ -97,7 +98,7 @@ const PIPELINE_PHASES: PipelinePhase[] = [
     description: "Post approved summary to the executive update channel.",
     doneMessage: "Awaiting one-click human approval.",
   },
-];
+]
 
 const TASK_UPDATES: TaskUpdate[] = [
   {
@@ -124,21 +125,68 @@ const TASK_UPDATES: TaskUpdate[] = [
     blocker: "Legal review pending",
     blockerAgeDays: 5,
   },
-  { project: "Partner Onboarding", owner: "Ari Patel", status: "in_progress", progress: 72 },
-  { project: "Billing Automation", owner: "Noah Kim", status: "in_progress", progress: 58 },
-  { project: "Security Audit", owner: "Dina Rahman", status: "done", progress: 100 },
-  { project: "Support AI Copilot", owner: "Ethan Hall", status: "done", progress: 100 },
-  { project: "Data Warehouse Cleanup", owner: "Lena Ortiz", status: "at_risk", progress: 49 },
-  { project: "Retention Campaign", owner: "Ivy Gomez", status: "done", progress: 100 },
-  { project: "Compliance Vault", owner: "Marco Silva", status: "in_progress", progress: 68 },
-];
+  {
+    project: "Partner Onboarding",
+    owner: "Ari Patel",
+    status: "in_progress",
+    progress: 72,
+  },
+  {
+    project: "Billing Automation",
+    owner: "Noah Kim",
+    status: "in_progress",
+    progress: 58,
+  },
+  {
+    project: "Security Audit",
+    owner: "Dina Rahman",
+    status: "done",
+    progress: 100,
+  },
+  {
+    project: "Support AI Copilot",
+    owner: "Ethan Hall",
+    status: "done",
+    progress: 100,
+  },
+  {
+    project: "Data Warehouse Cleanup",
+    owner: "Lena Ortiz",
+    status: "at_risk",
+    progress: 49,
+  },
+  {
+    project: "Retention Campaign",
+    owner: "Ivy Gomez",
+    status: "done",
+    progress: 100,
+  },
+  {
+    project: "Compliance Vault",
+    owner: "Marco Silva",
+    status: "in_progress",
+    progress: 68,
+  },
+]
 
 const INTEGRATIONS: Integration[] = [
   { name: "Notion API", detail: "Workspace: BizOps Q3", status: "connected" },
-  { name: "Gemini API", detail: "Model: gemini-1.5-pro", status: "connected" },
-  { name: "Slack API", detail: "Channel: #executive-updates", status: "connected" },
-  { name: "CrewAI or LangGraph", detail: "Runtime orchestration", status: "pending" },
-];
+  {
+    name: "Gemini API",
+    detail: "Model: gemini-3.7-flash",
+    status: "connected",
+  },
+  {
+    name: "Slack API",
+    detail: "Channel: #executive-updates",
+    status: "connected",
+  },
+  {
+    name: "CrewAI or LangGraph",
+    detail: "Runtime orchestration",
+    status: "pending",
+  },
+]
 
 const SHIP_GAPS: ShipGap[] = [
   {
@@ -156,7 +204,7 @@ const SHIP_GAPS: ShipGap[] = [
     impact: "Enables monthly blocker trend reports and forecasting.",
     status: "advanced",
   },
-];
+]
 
 const STACK_BADGES = [
   "Python",
@@ -165,27 +213,27 @@ const STACK_BADGES = [
   "Gemini API",
   "Slack API",
   "Notion API",
-];
+]
 
 const CADENCE_OPTIONS = [
   "Weekly - Monday 09:00 UTC",
   "Weekly - Friday 16:00 UTC",
   "Biweekly - Monday 09:00 UTC",
-];
+]
 
 const levelClass: Record<LogLevel, string> = {
   info: "level-info",
   success: "level-success",
   warn: "level-warn",
-};
+}
 
 const clamp = (value: number, minimum: number, maximum: number) =>
-  Math.min(maximum, Math.max(minimum, value));
+  Math.min(maximum, Math.max(minimum, value))
 
 const sleep = (delayMs: number) =>
   new Promise<void>((resolve) => {
-    window.setTimeout(resolve, delayMs);
-  });
+    window.setTimeout(resolve, delayMs)
+  })
 
 const clock = () =>
   new Date().toLocaleTimeString([], {
@@ -193,90 +241,107 @@ const clock = () =>
     minute: "2-digit",
     second: "2-digit",
     hour12: false,
-  });
+  })
 
 const weekLabel = () => {
-  const monday = new Date();
-  const dayOffset = (monday.getDay() + 6) % 7;
-  monday.setDate(monday.getDate() - dayOffset);
+  const monday = new Date()
+  const dayOffset = (monday.getDay() + 6) % 7
+  monday.setDate(monday.getDate() - dayOffset)
 
   return monday.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
-  });
-};
+  })
+}
 
 const blockerSeverityFromAge = (ageDays: number): Severity => {
-  if (ageDays >= 3) return "high";
-  if (ageDays === 2) return "medium";
-  return "low";
-};
+  if (ageDays >= 3) return "high"
+  if (ageDays === 2) return "medium"
+  return "low"
+}
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("brief");
-  const [runState, setRunState] = useState<RunState>("idle");
-  const [currentPhase, setCurrentPhase] = useState(-1);
-  const [runCounter, setRunCounter] = useState(24);
-  const [lastPostedAt, setLastPostedAt] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ActiveTab>("brief")
+  const [runState, setRunState] = useState<RunState>("idle")
+  const [currentPhase, setCurrentPhase] = useState(-1)
+  const [runCounter, setRunCounter] = useState(24)
+  const [lastPostedAt, setLastPostedAt] = useState<string | null>(null)
 
   const [settings, setSettings] = useState<WorkflowSettings>({
     cadence: CADENCE_OPTIONS[0],
     notionDatabase: "Q3 Task Tracker",
     slackChannel: "#executive-updates",
-    model: "gemini-1.5-pro",
+    model: "gemini-3.7-flash",
     orchestration: "CrewAI",
     minConfidence: 75,
     highBlockerLimit: 1,
-  });
+  })
 
-  const [manualHours, setManualHours] = useState(7);
-  const [reviewMinutes, setReviewMinutes] = useState(25);
-  const [hourlyRate, setHourlyRate] = useState(75);
-  const [runsPerMonth, setRunsPerMonth] = useState(4);
+  const [manualHours, setManualHours] = useState(7)
+  const [reviewMinutes, setReviewMinutes] = useState(25)
+  const [hourlyRate, setHourlyRate] = useState(75)
+  const [runsPerMonth, setRunsPerMonth] = useState(4)
 
   const [logs, setLogs] = useState<LogEntry[]>([
-    { time: "09:01:03", level: "info", message: "BizOps mock workspace loaded." },
-    { time: "09:01:04", level: "success", message: "Ready for weekly run simulation." },
-  ]);
+    {
+      time: "09:01:03",
+      level: "info",
+      message: "BizOps mock workspace loaded.",
+    },
+    {
+      time: "09:01:04",
+      level: "success",
+      message: "Ready for weekly run simulation.",
+    },
+  ])
 
   const insights = useMemo(() => {
-    const totalTasks = TASK_UPDATES.length;
-    const completedTasks = TASK_UPDATES.filter((task) => task.status === "done").length;
-    const inProgressTasks = TASK_UPDATES.filter((task) => task.status === "in_progress").length;
-    const atRiskTasks = TASK_UPDATES.filter((task) => task.status === "at_risk").length;
+    const totalTasks = TASK_UPDATES.length
+    const completedTasks = TASK_UPDATES.filter(
+      (task) => task.status === "done",
+    ).length
+    const inProgressTasks = TASK_UPDATES.filter(
+      (task) => task.status === "in_progress",
+    ).length
+    const atRiskTasks = TASK_UPDATES.filter(
+      (task) => task.status === "at_risk",
+    ).length
 
-    const blockers: BlockerItem[] = TASK_UPDATES.filter((task) => task.status === "blocked").map(
-      (task) => {
-        const ageDays = task.blockerAgeDays ?? 1;
-        return {
-          project: task.project,
-          owner: task.owner,
-          summary: task.blocker ?? "Dependency issue",
-          severity: blockerSeverityFromAge(ageDays),
-          ageDays,
-          recommendedAction:
-            ageDays >= 3
-              ? "Escalate in leadership sync today"
-              : "Assign owner and unblock within 24h",
-        };
-      },
-    );
+    const blockers: BlockerItem[] = TASK_UPDATES.filter(
+      (task) => task.status === "blocked",
+    ).map((task) => {
+      const ageDays = task.blockerAgeDays ?? 1
+      return {
+        project: task.project,
+        owner: task.owner,
+        summary: task.blocker ?? "Dependency issue",
+        severity: blockerSeverityFromAge(ageDays),
+        ageDays,
+        recommendedAction:
+          ageDays >= 3
+            ? "Escalate in leadership sync today"
+            : "Assign owner and unblock within 24h",
+      }
+    })
 
     const highSeverityBlockers = blockers.filter(
       (blocker) => blocker.severity === "high",
-    ).length;
+    ).length
 
     const confidence = clamp(
-      Math.round(92 - blockers.length * 9 - atRiskTasks * 4 + completedTasks * 1.2),
+      Math.round(
+        92 - blockers.length * 9 - atRiskTasks * 4 + completedTasks * 1.2,
+      ),
       52,
       96,
-    );
+    )
 
-    const health = confidence >= 84 ? "Green" : confidence >= 72 ? "Yellow" : "Red";
+    const health =
+      confidence >= 84 ? "Green" : confidence >= 72 ? "Yellow" : "Red"
 
     const wins = TASK_UPDATES.filter((task) => task.status === "done")
       .slice(0, 3)
-      .map((task) => task.project);
+      .map((task) => task.project)
 
     return {
       totalTasks,
@@ -288,22 +353,27 @@ export default function App() {
       confidence,
       health,
       wins,
-    };
-  }, []);
+    }
+  }, [])
 
-  const confidenceBlocked = insights.confidence < settings.minConfidence;
-  const blockerBlocked = insights.highSeverityBlockers > settings.highBlockerLimit;
-  const canAutoPost = !confidenceBlocked && !blockerBlocked;
+  const [generatedPreview, setGeneratedPreview] = useState<string | null>(null)
 
-  const weeklyHoursSaved = Math.max(manualHours - reviewMinutes / 60, 0);
-  const monthlyHoursSaved = weeklyHoursSaved * runsPerMonth;
-  const monthlySavings = monthlyHoursSaved * hourlyRate;
-  const annualSavings = monthlySavings * 12;
+  const confidenceBlocked = insights.confidence < settings.minConfidence
+  const blockerBlocked =
+    insights.highSeverityBlockers > settings.highBlockerLimit
+  const canAutoPost = !confidenceBlocked && !blockerBlocked
+
+  const weeklyHoursSaved = Math.max(manualHours - reviewMinutes / 60, 0)
+  const monthlyHoursSaved = weeklyHoursSaved * runsPerMonth
+  const monthlySavings = monthlyHoursSaved * hourlyRate
+  const annualSavings = monthlySavings * 12
   const efficiencyGain =
-    manualHours > 0 ? clamp(Math.round((weeklyHoursSaved / manualHours) * 100), 0, 99) : 0;
+    manualHours > 0
+      ? clamp(Math.round((weeklyHoursSaved / manualHours) * 100), 0, 99)
+      : 0
 
   const summaryLines = useMemo(() => {
-    const leadBlocker = insights.blockers[0];
+    const leadBlocker = insights.blockers[0]
 
     return [
       `Week of ${weekLabel()} - Executive Standup Summary`,
@@ -316,11 +386,12 @@ export default function App() {
       canAutoPost
         ? `Quality gate passed. Ready to post to ${settings.slackChannel}.`
         : "Quality gate requires human review before publishing.",
-    ];
-  }, [canAutoPost, insights, settings.slackChannel]);
+    ]
+  }, [canAutoPost, insights, settings.slackChannel])
 
   const slackPreview = useMemo(
     () =>
+      generatedPreview ||
       [
         "*BizOps Weekly Executive Brief*",
         `*Week of ${weekLabel()}*`,
@@ -330,119 +401,177 @@ export default function App() {
         `*Risk:* ${insights.blockers.length} blockers, ${insights.atRiskTasks} at-risk tasks`,
         "",
         "*Actions for leadership:*",
-        ...insights.blockers.slice(0, 2).map(
-          (blocker) => `- ${blocker.project}: ${blocker.summary} (${blocker.owner})`,
-        ),
+        ...insights.blockers
+          .slice(0, 2)
+          .map(
+            (blocker) =>
+              `- ${blocker.project}: ${blocker.summary} (${blocker.owner})`,
+          ),
       ].join("\n"),
-    [insights],
-  );
+    [insights, generatedPreview],
+  )
 
   const appendLog = (level: LogLevel, message: string) => {
-    setLogs((previous) => [...previous, { time: clock(), level, message }].slice(-32));
-  };
+    setLogs((previous) =>
+      [...previous, { time: clock(), level, message }].slice(-32),
+    )
+  }
 
-  const updateSetting = <Key extends keyof WorkflowSettings>(
+  const updateSetting = <Key extends keyof WorkflowSettings,>(
     key: Key,
     value: WorkflowSettings[Key],
   ) => {
-    setSettings((previous) => ({ ...previous, [key]: value }));
-  };
+    setSettings((previous) => ({ ...previous, [key]: value }))
+  }
 
-  const updateNumber = (
-    setter: Dispatch<SetStateAction<number>>,
-    minimum: number,
-    maximum: number,
-  ) => (event: ChangeEvent<HTMLInputElement>) => {
-    const parsed = Number(event.target.value);
-    if (!Number.isFinite(parsed)) return;
-    setter(clamp(parsed, minimum, maximum));
-  };
+  const updateNumber =
+    (
+      setter: Dispatch<SetStateAction<number>>,
+      minimum: number,
+      maximum: number,
+    ) =>
+    (event: ChangeEvent<HTMLInputElement>) => {
+      const parsed = Number(event.target.value)
+      if (!Number.isFinite(parsed)) return
+      setter(clamp(parsed, minimum, maximum))
+    }
 
   const handleRunWorkflow = async () => {
-    if (runState === "running") return;
+    if (runState === "running") return
 
-    const nextRun = runCounter + 1;
-    setRunCounter(nextRun);
-    setRunState("running");
-    setCurrentPhase(0);
-    setActiveTab("log");
+    const nextRun = runCounter + 1
+    setRunCounter(nextRun)
+    setRunState("running")
+    setCurrentPhase(0)
+    setActiveTab("log")
+    setGeneratedPreview(null)
     setLogs([
       {
         time: clock(),
         level: "info",
         message: `Run #${nextRun} started using ${settings.orchestration}.`,
       },
-    ]);
+    ])
 
     for (let index = 0; index < PIPELINE_PHASES.length; index += 1) {
-      const phase = PIPELINE_PHASES[index];
-      setCurrentPhase(index);
-      appendLog("info", `${phase.label}: ${phase.description}`);
-      await sleep(650 + index * 220);
-      appendLog("success", phase.doneMessage);
+      const phase = PIPELINE_PHASES[index]
+      setCurrentPhase(index)
+      appendLog("info", `${phase.label}: ${phase.description}`)
+      await sleep(650 + index * 220)
+      appendLog("success", phase.doneMessage)
+    }
+
+    try {
+      const response = await fetch("/api/workflow/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings, insights }),
+      })
+      const result = await response.json()
+      if (result.success && result.data.slackPreview) {
+        setGeneratedPreview(result.data.slackPreview)
+        appendLog(
+          "success",
+          "AI generated a new executive brief based on the insights.",
+        )
+      }
+    } catch (e) {
+      appendLog("warn", "Failed to reach AI backend, using local mock summary.")
     }
 
     if (canAutoPost) {
-      appendLog("success", `Quality gate passed. Summary is ready for ${settings.slackChannel}.`);
+      appendLog(
+        "success",
+        `Quality gate passed. Summary is ready for ${settings.slackChannel}.`,
+      )
     } else {
-      appendLog("warn", "Quality gate blocked auto-post. Review blockers or adjust thresholds.");
+      appendLog(
+        "warn",
+        "Quality gate blocked auto-post. Review blockers or adjust thresholds.",
+      )
     }
 
-    setCurrentPhase(PIPELINE_PHASES.length - 1);
-    setRunState("ready");
-    setActiveTab("brief");
-  };
+    setCurrentPhase(PIPELINE_PHASES.length - 1)
+    setRunState("ready")
+    setActiveTab("brief")
+  }
 
-  const handlePostToSlack = () => {
-    if (runState === "running") return;
+  const handlePostToSlack = async () => {
+    if (runState === "running") return
 
     if (runState === "idle") {
-      appendLog("warn", "Run the workflow before posting to Slack.");
-      setActiveTab("log");
-      return;
+      appendLog("warn", "Run the workflow before posting to Slack.")
+      setActiveTab("log")
+      return
     }
 
     if (!canAutoPost) {
-      appendLog("warn", "Cannot auto-post. Quality gate failed and needs human review.");
-      setActiveTab("blockers");
-      return;
+      appendLog(
+        "warn",
+        "Cannot auto-post. Quality gate failed and needs human review.",
+      )
+      setActiveTab("blockers")
+      return
     }
 
-    appendLog("success", `Executive brief posted to ${settings.slackChannel}.`);
-    setRunState("posted");
-    setLastPostedAt(
-      new Date().toLocaleString(undefined, {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      }),
-    );
-    setActiveTab("log");
-  };
+    appendLog("info", `Publishing summary to ${settings.slackChannel}...`)
+
+    try {
+      const response = await fetch("/api/workflow/publish", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slackChannel: settings.slackChannel,
+          payload: slackPreview,
+        }),
+      })
+      const result = await response.json()
+      if (result.success) {
+        appendLog(
+          "success",
+          `Executive brief posted to ${settings.slackChannel}.`,
+        )
+        setRunState("posted")
+        setLastPostedAt(
+          new Date().toLocaleString(undefined, {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          }),
+        )
+      } else {
+        appendLog("warn", "Failed to post to Slack API.")
+      }
+    } catch (error) {
+      appendLog("warn", "Network error when attempting to post to Slack API.")
+    }
+
+    setActiveTab("log")
+  }
 
   const phaseStatus = (index: number): "pending" | "active" | "done" => {
-    if (runState === "idle") return "pending";
+    if (runState === "idle") return "pending"
     if (runState === "running") {
-      if (index < currentPhase) return "done";
-      if (index === currentPhase) return "active";
-      return "pending";
+      if (index < currentPhase) return "done"
+      if (index === currentPhase) return "active"
+      return "pending"
     }
     if (runState === "posted") {
-      return "done";
+      return "done"
     }
-    return "done";
-  };
+    return "done"
+  }
 
   const runStatusLabel =
     runState === "running"
       ? "Workflow running"
       : runState === "posted"
-      ? "Summary posted"
-      : runState === "ready"
-      ? "Run complete"
-      : "Ready to run";
+        ? "Summary posted"
+        : runState === "ready"
+          ? "Run complete"
+          : "Ready to run"
 
   return (
     <div className="app-shell">
@@ -458,12 +587,18 @@ export default function App() {
         <div className="topbar-actions">
           <span
             className={`status-pill ${
-              runState === "running" ? "active" : runState === "posted" ? "success" : ""
+              runState === "running"
+                ? "active"
+                : runState === "posted"
+                  ? "success"
+                  : ""
             }`}
           >
             {runStatusLabel}
           </span>
-          <span className="status-pill neutral">Run #{runCounter} - {settings.cadence}</span>
+          <span className="status-pill neutral">
+            Run #{runCounter} - {settings.cadence}
+          </span>
           <button
             className="run-button secondary"
             onClick={handlePostToSlack}
@@ -495,15 +630,24 @@ export default function App() {
         <article className="surface-card metric-card">
           <p className="metric-label">Escalation Blockers</p>
           <p className="metric-value">{insights.highSeverityBlockers}</p>
-          <p className="metric-meta">Threshold: {settings.highBlockerLimit} high-severity blockers</p>
+          <p className="metric-meta">
+            Threshold: {settings.highBlockerLimit} high-severity blockers
+          </p>
         </article>
         <article className="surface-card metric-card">
           <p className="metric-label">Estimated Monthly Savings</p>
           <p className="metric-value">
-            ${monthlySavings.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            $
+            {monthlySavings.toLocaleString(undefined, {
+              maximumFractionDigits: 0,
+            })}
           </p>
           <p className="metric-meta">
-            ${annualSavings.toLocaleString(undefined, { maximumFractionDigits: 0 })} annualized
+            $
+            {annualSavings.toLocaleString(undefined, {
+              maximumFractionDigits: 0,
+            })}{" "}
+            annualized
           </p>
         </article>
       </section>
@@ -521,7 +665,9 @@ export default function App() {
                 <span>Cadence</span>
                 <select
                   value={settings.cadence}
-                  onChange={(event) => updateSetting("cadence", event.target.value)}
+                  onChange={(event) =>
+                    updateSetting("cadence", event.target.value)
+                  }
                 >
                   {CADENCE_OPTIONS.map((option) => (
                     <option key={option} value={option}>
@@ -535,7 +681,9 @@ export default function App() {
                 <span>Notion Database</span>
                 <input
                   value={settings.notionDatabase}
-                  onChange={(event) => updateSetting("notionDatabase", event.target.value)}
+                  onChange={(event) =>
+                    updateSetting("notionDatabase", event.target.value)
+                  }
                 />
               </label>
 
@@ -543,7 +691,9 @@ export default function App() {
                 <span>Slack Channel</span>
                 <input
                   value={settings.slackChannel}
-                  onChange={(event) => updateSetting("slackChannel", event.target.value)}
+                  onChange={(event) =>
+                    updateSetting("slackChannel", event.target.value)
+                  }
                 />
               </label>
 
@@ -551,7 +701,9 @@ export default function App() {
                 <span>LLM Model</span>
                 <input
                   value={settings.model}
-                  onChange={(event) => updateSetting("model", event.target.value)}
+                  onChange={(event) =>
+                    updateSetting("model", event.target.value)
+                  }
                 />
               </label>
 
@@ -560,7 +712,10 @@ export default function App() {
                 <select
                   value={settings.orchestration}
                   onChange={(event) =>
-                    updateSetting("orchestration", event.target.value as "CrewAI" | "LangGraph")
+                    updateSetting(
+                      "orchestration",
+                      event.target.value as "CrewAI" | "LangGraph",
+                    )
                   }
                 >
                   <option value="CrewAI">CrewAI</option>
@@ -588,7 +743,9 @@ export default function App() {
               <div className="field">
                 <div className="range-row">
                   <span>High blocker limit</span>
-                  <span className="range-value">{settings.highBlockerLimit}</span>
+                  <span className="range-value">
+                    {settings.highBlockerLimit}
+                  </span>
                 </div>
                 <input
                   type="range"
@@ -597,14 +754,19 @@ export default function App() {
                   step={1}
                   value={settings.highBlockerLimit}
                   onChange={(event) =>
-                    updateSetting("highBlockerLimit", Number(event.target.value))
+                    updateSetting(
+                      "highBlockerLimit",
+                      Number(event.target.value),
+                    )
                   }
                 />
               </div>
             </div>
 
             <ul className="gate-list">
-              <li className={`gate-item ${confidenceBlocked ? "fail" : "pass"}`}>
+              <li
+                className={`gate-item ${confidenceBlocked ? "fail" : "pass"}`}
+              >
                 <span>Confidence gate &gt;= {settings.minConfidence}%</span>
                 <strong>{confidenceBlocked ? "Fail" : "Pass"}</strong>
               </li>
@@ -617,7 +779,9 @@ export default function App() {
 
           <section className="surface-card panel">
             <h2 className="panel-title">What Is Missing to Ship</h2>
-            <p className="panel-subtitle">Focus these upgrades for production readiness.</p>
+            <p className="panel-subtitle">
+              Focus these upgrades for production readiness.
+            </p>
 
             <ul className="ship-list">
               {SHIP_GAPS.map((item) => (
@@ -626,7 +790,9 @@ export default function App() {
                     <h3>{item.title}</h3>
                     <p>{item.impact}</p>
                   </div>
-                  <span className={`ship-status ${item.status}`}>{item.status}</span>
+                  <span className={`ship-status ${item.status}`}>
+                    {item.status}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -640,8 +806,8 @@ export default function App() {
                 tab === "brief"
                   ? "Executive Brief"
                   : tab === "blockers"
-                  ? `Blockers (${insights.blockers.length})`
-                  : "Run Log";
+                    ? `Blockers (${insights.blockers.length})`
+                    : "Run Log"
 
               return (
                 <button
@@ -651,14 +817,16 @@ export default function App() {
                 >
                   {label}
                 </button>
-              );
+              )
             })}
           </div>
 
           <div className="tab-panel">
             {activeTab === "brief" && (
               <div className="summary-stack">
-                <div className={`summary-callout ${canAutoPost ? "pass" : "warn"}`}>
+                <div
+                  className={`summary-callout ${canAutoPost ? "pass" : "warn"}`}
+                >
                   {canAutoPost
                     ? "Auto-post is eligible. Executive brief can publish after review."
                     : "Manual review required. At least one quality gate has failed."}
@@ -682,7 +850,10 @@ export default function App() {
                 )}
 
                 {insights.blockers.map((blocker) => (
-                  <article key={`${blocker.project}-${blocker.owner}`} className="blocker-row">
+                  <article
+                    key={`${blocker.project}-${blocker.owner}`}
+                    className="blocker-row"
+                  >
                     <div className="blocker-head">
                       <h3>{blocker.project}</h3>
                       <span className={`severity-pill ${blocker.severity}`}>
@@ -694,7 +865,9 @@ export default function App() {
                       <span>Owner: {blocker.owner}</span>
                       <span>Age: {blocker.ageDays}d</span>
                     </div>
-                    <div className="blocker-action">Next action: {blocker.recommendedAction}</div>
+                    <div className="blocker-action">
+                      Next action: {blocker.recommendedAction}
+                    </div>
                   </article>
                 ))}
               </div>
@@ -705,7 +878,9 @@ export default function App() {
                 {logs.map((entry, index) => (
                   <div key={`${entry.time}-${index}`} className="log-entry">
                     <span className="log-time">{entry.time}</span>
-                    <span className={`log-level ${levelClass[entry.level]}`}>{entry.level}</span>
+                    <span className={`log-level ${levelClass[entry.level]}`}>
+                      {entry.level}
+                    </span>
                     <span className="log-message">{entry.message}</span>
                   </div>
                 ))}
@@ -721,24 +896,35 @@ export default function App() {
             >
               Post to Slack
             </button>
-            <button className="run-button secondary" onClick={() => setActiveTab("brief")}>
+            <button
+              className="run-button secondary"
+              onClick={() => setActiveTab("brief")}
+            >
               Review Brief
             </button>
-            <span className="muted">Last posted: {lastPostedAt ?? "Not posted yet"}</span>
+            <span className="muted">
+              Last posted: {lastPostedAt ?? "Not posted yet"}
+            </span>
           </div>
         </section>
 
         <aside className="right-column">
           <section className="surface-card panel">
             <h2 className="panel-title">Agent Pipeline</h2>
-            <p className="panel-subtitle">Run state across the Notion-to-Slack workflow.</p>
+            <p className="panel-subtitle">
+              Run state across the Notion-to-Slack workflow.
+            </p>
 
             <div className="pipeline-list">
               {PIPELINE_PHASES.map((phase, index) => {
-                const status = phaseStatus(index);
+                const status = phaseStatus(index)
 
                 return (
-                  <div key={phase.id} className="pipeline-node" data-status={status}>
+                  <div
+                    key={phase.id}
+                    className="pipeline-node"
+                    data-status={status}
+                  >
                     <div className="pipeline-dot" data-status={status} />
                     <div>
                       <p className="pipeline-label">{phase.label}</p>
@@ -750,14 +936,16 @@ export default function App() {
                       </p>
                     </div>
                   </div>
-                );
+                )
               })}
             </div>
           </section>
 
           <section className="surface-card panel">
             <h2 className="panel-title">Hours Saved Calculator</h2>
-            <p className="panel-subtitle">Adjust assumptions to estimate PM time and cost savings.</p>
+            <p className="panel-subtitle">
+              Adjust assumptions to estimate PM time and cost savings.
+            </p>
 
             <div className="roi-grid">
               <label className="field">
@@ -817,7 +1005,10 @@ export default function App() {
               <div>
                 <span>Monthly savings</span>
                 <strong>
-                  ${monthlySavings.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                  $
+                  {monthlySavings.toLocaleString(undefined, {
+                    maximumFractionDigits: 0,
+                  })}
                 </strong>
               </div>
             </div>
@@ -850,5 +1041,5 @@ export default function App() {
         </aside>
       </main>
     </div>
-  );
+  )
 }
