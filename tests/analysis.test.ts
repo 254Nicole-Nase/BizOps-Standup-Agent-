@@ -57,7 +57,7 @@ describe("computeMetrics", () => {
 describe("evaluateGates", () => {
   const tasks = sampleTasks(NOW)
   const metrics = computeMetrics(tasks, NOW)
-  const settings = { ...defaultSettings(), provider: "cerebras" as const, minConfidence: 70, highRiskLimit: 2 }
+  const settings = { ...defaultSettings(), provider: "gemini" as const, minConfidence: 70, highRiskLimit: 2 }
 
   it("passes a grounded LLM brief", () => {
     const gates = evaluateGates({ tasks, metrics, brief: fallbackBrief(tasks, metrics), briefSource: "llm", settings })

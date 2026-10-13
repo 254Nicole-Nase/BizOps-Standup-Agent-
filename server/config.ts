@@ -19,7 +19,7 @@ const injected = new Set(
     .filter(Boolean),
 )
 
-export const hasCredential = (service: "notion" | "slack" | "cerebras", token?: string) =>
+export const hasCredential = (service: "notion" | "slack", token?: string) =>
   Boolean(token) || injected.has(service)
 
 /** Authorization header for a service, omitted when the proxy injects it. */
@@ -44,12 +44,6 @@ export const config = {
     defaultChannel: env("SLACK_CHANNEL") ?? "#executive-updates",
   },
 
-  cerebras: {
-    apiKey: env("CEREBRAS_API_KEY"),
-    model: env("CEREBRAS_MODEL") ?? "gpt-oss-120b",
-    baseUrl: env("CEREBRAS_BASE_URL") ?? "https://api.cerebras.ai/v1",
-  },
-
   gemini: {
     apiKey: env("GEMINI_API_KEY"),
     model: env("GEMINI_MODEL") ?? "gemini-flash-latest",
@@ -67,22 +61,12 @@ export const config = {
 }
 
 export const providerConfigured = (provider: LlmProvider) =>
-  provider === "cerebras"
-    ? hasCredential("cerebras", config.cerebras.apiKey)
-    : provider === "gemini"
-      ? Boolean(config.gemini.apiKey)
-      : true
+  provider === "gemini" ? Boolean(config.gemini.apiKey) : true
 
-export const defaultModel = (provider: LlmProvider) =>
-  provider === "cerebras"
-    ? config.cerebras.model
-    : provider === "gemini"
-      ? config.gemini.model
-      : "deterministic"
+export const defaultModel = (provider: LlmProvider) => (provider === "gemini" ? config.gemini.model : "deterministic")
 
-/** Cerebras first (fastest), then Gemini, then the deterministic writer. */
-export const defaultProvider = (): LlmProvider =>
-  providerConfigured("cerebras") ? "cerebras" : providerConfigured("gemini") ? "gemini" : "none"
+/** Gemini when a key is set, otherwise the deterministic writer. */
+export const defaultProvider = (): LlmProvider => (providerConfigured("gemini") ? "gemini" : "none")
 
 export const defaultSettings = (): RunSettings => {
   const provider = defaultProvider()

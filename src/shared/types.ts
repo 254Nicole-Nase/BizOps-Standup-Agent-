@@ -9,7 +9,7 @@ export type TaskStatus =
 
 export type Severity = "high" | "medium" | "low"
 export type Health = "Green" | "Yellow" | "Red"
-export type LlmProvider = "cerebras" | "gemini" | "none"
+export type LlmProvider = "gemini" | "none"
 export type DataSource = "notion" | "demo"
 
 export interface Task {

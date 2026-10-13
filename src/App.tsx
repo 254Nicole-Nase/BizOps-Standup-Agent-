@@ -25,7 +25,6 @@ const PHASES: { id: PhaseId; label: string; agent: string; description: string }
 ]
 
 const PROVIDER_LABEL: Record<LlmProvider, string> = {
-  cerebras: "Cerebras",
   gemini: "Google Gemini",
   none: "No LLM (template)",
 }

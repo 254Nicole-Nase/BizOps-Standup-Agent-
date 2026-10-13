@@ -1,6 +1,6 @@
 # BizOps Standup Agent
 
-An AI operations agent that turns a Notion project tracker into a weekly executive brief in Slack. It runs a deterministic risk-scoring step, has an LLM (Cerebras or Gemini) write the brief, checks that brief against quality gates, and asks a human to approve when anything looks off.
+An AI operations agent that turns a Notion project tracker into a weekly executive brief in Slack. It runs a deterministic risk-scoring step, has an LLM (Google Gemini) write the brief, checks that brief against quality gates, and asks a human to approve when anything looks off.
 
 ```
 Notion DB ──▶ Ingest ──▶ Score risk ──▶ Compose (LLM) ──▶ Quality gates ──▶ Slack
@@ -24,7 +24,7 @@ Notion DB ──▶ Ingest ──▶ Score risk ──▶ Compose (LLM) ──�
 |---|---|
 | **Notion ingest** | Paginates the database and fuzzy-matches property names (`Owner`/`Assignee`/`DRI`, `Due`/`Deadline`…). Handles status, select, people, number, formula, rollup, and date properties. `NOTION_PROPERTY_MAP` overrides any of these. |
 | **Risk scoring** | Blocked or at-risk state, blocker age, overdue dates, due-date pressure against progress, and not-started items near their deadline. Each risk lists the signals that drove its score. |
-| **LLM providers** | Cerebras (OpenAI-compatible, very fast) or Google Gemini, chosen per run. With no key set, a deterministic template writer is used instead. |
+| **LLM** | Google Gemini, with JSON output and a retry on rate limits and 5xx errors. With no key set, a deterministic template writer is used instead. |
 | **Slack** | Block Kit message with a mrkdwn fallback. Posts with a bot token (and returns a permalink) or an incoming webhook. Without either, posts are recorded as dry runs. |
 | **Scheduler** | `SCHEDULE_CRON` runs the agent unattended. Scheduled runs auto-post only when every gate passes. |
 | **Dashboard** | Slack-style brief preview, risk triage, tracker table, live pipeline, confidence trend across runs, and a time-saved calculator. |
@@ -39,7 +39,7 @@ pnpm dev               # http://localhost:3000
 
 With no keys set it runs end-to-end on demo data. Add keys one at a time:
 
-1. **LLM:** set `CEREBRAS_API_KEY` (or `GEMINI_API_KEY`).
+1. **LLM:** set `GEMINI_API_KEY` (optionally `GEMINI_MODEL`, default `gemini-flash-latest`).
 2. **Notion:** create an internal integration, share your tracker database with it, then set `NOTION_TOKEN` and `NOTION_DATABASE_ID`.
    Recommended columns: `Project` (title), `Owner` (person), `Status` (status), `Progress` (number, 0-1 or 0-100), `Blocker` (text), `Blocked Since` (date), `Due` (date), `Update` (text).
 3. **Slack:** create an app with the `chat:write` scope, invite it to the channel, then set `SLACK_BOT_TOKEN` and `SLACK_CHANNEL`. A channel ID is the most reliable value.
@@ -47,7 +47,7 @@ With no keys set it runs end-to-end on demo data. Add keys one at a time:
 
 ### Keys injected by a proxy (Claude Code cloud network secrets)
 
-If an outbound proxy adds the `Authorization` header for you, leave the token variables empty and set `PROXY_INJECTED_CREDENTIALS=notion,slack,cerebras`. Those services then count as configured, and the app never sends or holds the key. When `HTTPS_PROXY` is set, the server sends its API calls through it automatically. (Gemini authenticates with an API-key header rather than a Bearer token, so set `GEMINI_API_KEY` directly.)
+If an outbound proxy adds the `Authorization` header for you, leave the token variables empty and set `PROXY_INJECTED_CREDENTIALS=notion,slack`. Those services then count as configured, and the app never sends or holds the key. When `HTTPS_PROXY` is set, the server sends its API calls through it automatically. (Gemini authenticates with an API-key header rather than a Bearer token, so set `GEMINI_API_KEY` directly.)
 
 ## Scoring model
 
@@ -77,4 +77,4 @@ pnpm build && pnpm start
 
 Project layout: `server/` (config, notion, analysis, llm, slack, pipeline, store, scheduler), `server.ts` (Express routes plus Vite middleware), `src/` (React dashboard), `src/shared/types.ts` (types shared by client and server), `tests/`.
 
-Stack: TypeScript, Node/Express 5, React 19, Vite, Tailwind v4, Zod, Vitest, Notion API, Slack Web API, Cerebras, Gemini.
+Stack: TypeScript, Node/Express 5, React 19, Vite, Tailwind v4, Zod, Vitest, Notion API, Slack Web API, Gemini.

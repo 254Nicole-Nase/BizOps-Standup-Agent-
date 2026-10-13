@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai"
 import { z } from "zod"
-import type { Brief, LlmProvider, Metrics, Task } from "../src/shared/types"
-import { authHeader, config } from "./config"
+import type { Brief, Metrics, Task } from "../src/shared/types"
+import { config } from "./config"
 
 const severity = z.enum(["high", "medium", "low"])
 
@@ -93,39 +93,6 @@ export const extractJson = (text: string): unknown => {
   }
 }
 
-const callCerebras = async (model: string, user: string, jsonMode = true): Promise<string> => {
-  const response = await fetch(`${config.cerebras.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      ...authHeader(config.cerebras.apiKey),
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.2,
-      max_completion_tokens: 4096,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: user },
-      ],
-      ...(jsonMode ? { response_format: { type: "json_object" } } : {}),
-    }),
-  })
-
-  const json: any = await response.json().catch(() => ({}))
-  if (!response.ok) {
-    const message = json?.message ?? json?.error?.message ?? response.statusText
-    // Some models reject response_format; retry once in plain mode.
-    if (jsonMode && response.status === 400 && /response_format|json/i.test(message)) {
-      return callCerebras(model, user, false)
-    }
-    throw Object.assign(new Error(`Cerebras ${response.status}: ${message}`), { status: response.status })
-  }
-  const content = json?.choices?.[0]?.message?.content
-  if (!content) throw new Error("Cerebras returned an empty completion")
-  return content
-}
-
 /** Backoff before each retry of a transient provider error (rate limit or 5xx). Tests set this to zeros. */
 export const retryPolicy = { delaysMs: [1500, 4000] }
 
@@ -168,22 +135,20 @@ export interface ComposeResult {
 }
 
 /**
- * Generate the brief with the selected provider. The reply is schema-validated;
+ * Generate the brief with Gemini. The reply is schema-validated;
  * on failure the validation errors are fed back for one repair attempt.
  */
 export const composeBrief = async (
-  provider: Exclude<LlmProvider, "none">,
   model: string,
   tasks: Task[],
   metrics: Metrics,
 ): Promise<ComposeResult> => {
   const started = Date.now()
-  const call = provider === "cerebras" ? callCerebras : callGemini
   let prompt = buildUserPrompt(tasks, metrics)
   let lastError = ""
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const reply = await withRetry(() => call(model, prompt))
+    const reply = await withRetry(() => callGemini(model, prompt))
     try {
       const parsed = briefSchema.safeParse(extractJson(reply))
       if (parsed.success) {

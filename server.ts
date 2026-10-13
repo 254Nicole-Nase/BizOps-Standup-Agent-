@@ -14,7 +14,7 @@ import { getRun, listRuns } from "./server/store"
 const settingsSchema = z
   .object({
     slackChannel: z.string().trim().min(1).max(80),
-    provider: z.enum(["cerebras", "gemini", "none"]),
+    provider: z.enum(["gemini", "none"]),
     model: z.string().trim().min(1).max(80),
     minConfidence: z.number().int().min(0).max(100),
     highRiskLimit: z.number().int().min(0).max(20),
@@ -56,7 +56,7 @@ async function startServer() {
           mode: slackMode() === "dry_run" ? "none" : (slackMode() as "bot" | "webhook"),
           defaultChannel: config.slack.defaultChannel,
         },
-        providers: (["cerebras", "gemini", "none"] as const).map((id) => ({
+        providers: (["gemini", "none"] as const).map((id) => ({
           id,
           configured: providerConfigured(id),
           defaultModel: defaultModel(id),

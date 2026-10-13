@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { computeMetrics, fallbackBrief } from "../server/analysis"
 import { config } from "../server/config"
 import { composeBrief, extractJson, retryPolicy } from "../server/llm"
@@ -8,10 +8,19 @@ const tasks = sampleTasks()
 const metrics = computeMetrics(tasks)
 const validBrief = fallbackBrief(tasks, metrics)
 
-const completion = (content: string) =>
-  new Response(JSON.stringify({ choices: [{ message: { content } }] }), { status: 200 })
+const generateContent = vi.fn()
+vi.mock("@google/genai", () => ({
+  GoogleGenAI: class {
+    models = { generateContent }
+  },
+}))
 
-afterEach(() => vi.unstubAllGlobals())
+const reply = (text: string) => ({ text })
+const apiError = (status: number, message = "busy") => Object.assign(new Error(message), { status })
+
+beforeEach(() => {
+  generateContent.mockReset()
+})
 
 describe("extractJson", () => {
   it("tolerates code fences and preamble", () => {
@@ -21,73 +30,61 @@ describe("extractJson", () => {
   })
 })
 
-describe("composeBrief (Cerebras)", () => {
-  config.cerebras.apiKey = "test-key"
+describe("composeBrief (Gemini)", () => {
+  config.gemini.apiKey = "test-key"
 
   it("returns a validated brief", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(completion(JSON.stringify(validBrief)))
-    vi.stubGlobal("fetch", fetchMock)
-    const result = await composeBrief("cerebras", "gpt-oss-120b", tasks, metrics)
+    generateContent.mockResolvedValue(reply(JSON.stringify(validBrief)))
+    const result = await composeBrief("gemini-flash-latest", tasks, metrics)
     expect(result.brief.headline).toBe(validBrief.headline)
     expect(result.attempts).toBe(1)
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body)
-    expect(body.model).toBe("gpt-oss-120b")
-    expect(body.response_format).toEqual({ type: "json_object" })
+    const request = generateContent.mock.calls[0][0]
+    expect(request.model).toBe("gemini-flash-latest")
+    expect(request.config.responseMimeType).toBe("application/json")
   })
 
   it("feeds validation errors back for one repair attempt", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(completion('{"headline":"x"}'))
-      .mockResolvedValueOnce(completion(JSON.stringify(validBrief)))
-    vi.stubGlobal("fetch", fetchMock)
-    const result = await composeBrief("cerebras", "gpt-oss-120b", tasks, metrics)
+    generateContent
+      .mockResolvedValueOnce(reply('{"headline":"x"}'))
+      .mockResolvedValueOnce(reply(JSON.stringify(validBrief)))
+    const result = await composeBrief("m", tasks, metrics)
     expect(result.attempts).toBe(2)
-    const repairPrompt = JSON.parse(fetchMock.mock.calls[1][1].body).messages[1].content
-    expect(repairPrompt).toContain("rejected by the validator")
+    expect(generateContent.mock.calls[1][0].contents).toContain("rejected by the validator")
   })
 
   it("throws after two invalid replies", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => completion("not json")))
-    await expect(composeBrief("cerebras", "m", tasks, metrics)).rejects.toThrow(/validation/)
+    generateContent.mockResolvedValue(reply("not json"))
+    await expect(composeBrief("m", tasks, metrics)).rejects.toThrow(/validation/)
   })
 
   it("surfaces API errors", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(new Response(JSON.stringify({ message: "bad key" }), { status: 401 })),
-    )
-    await expect(composeBrief("cerebras", "m", tasks, metrics)).rejects.toThrow("Cerebras 401: bad key")
+    generateContent.mockRejectedValue(apiError(401, "bad key"))
+    await expect(composeBrief("m", tasks, metrics)).rejects.toThrow("bad key")
   })
 })
 
 describe("transient provider errors", () => {
   retryPolicy.delaysMs = [0, 0]
-  const failure = (status: number) => new Response(JSON.stringify({ message: "busy" }), { status })
 
-  it("retries a 503 and then succeeds", async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(failure(503))
-      .mockResolvedValueOnce(failure(429))
-      .mockResolvedValueOnce(completion(JSON.stringify(validBrief)))
-    vi.stubGlobal("fetch", fetchMock)
-    const result = await composeBrief("cerebras", "gpt-oss-120b", tasks, metrics)
+  it("retries a 503 and a 429, then succeeds", async () => {
+    generateContent
+      .mockRejectedValueOnce(apiError(503))
+      .mockRejectedValueOnce(apiError(429))
+      .mockResolvedValueOnce(reply(JSON.stringify(validBrief)))
+    const result = await composeBrief("m", tasks, metrics)
     expect(result.brief.headline).toBe(validBrief.headline)
-    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(generateContent).toHaveBeenCalledTimes(3)
   })
 
   it("gives up after the retries run out", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(failure(503))
-    vi.stubGlobal("fetch", fetchMock)
-    await expect(composeBrief("cerebras", "gpt-oss-120b", tasks, metrics)).rejects.toThrow("Cerebras 503")
-    expect(fetchMock).toHaveBeenCalledTimes(3)
+    generateContent.mockRejectedValue(apiError(503, "high demand"))
+    await expect(composeBrief("m", tasks, metrics)).rejects.toThrow("high demand")
+    expect(generateContent).toHaveBeenCalledTimes(3)
   })
 
-  it("does not retry a non-transient error such as 402", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(failure(402))
-    vi.stubGlobal("fetch", fetchMock)
-    await expect(composeBrief("cerebras", "gpt-oss-120b", tasks, metrics)).rejects.toThrow("Cerebras 402")
-    expect(fetchMock).toHaveBeenCalledTimes(1)
+  it("does not retry a non-transient error such as 403", async () => {
+    generateContent.mockRejectedValue(apiError(403, "forbidden"))
+    await expect(composeBrief("m", tasks, metrics)).rejects.toThrow("forbidden")
+    expect(generateContent).toHaveBeenCalledTimes(1)
   })
 })

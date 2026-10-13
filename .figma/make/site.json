@@ -1,6 +1,6 @@
 {
   "title": "BizOps Standup Agent",
-  "description": "AI agent that reads a Notion project tracker, scores delivery risk, writes a schema-validated executive brief with Cerebras or Gemini, and posts it to Slack behind quality gates.",
+  "description": "AI agent that reads a Notion project tracker, scores delivery risk, writes a schema-validated executive brief with Gemini, and posts it to Slack behind quality gates.",
   "robots": {
     "index": false
   },

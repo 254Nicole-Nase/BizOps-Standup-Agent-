@@ -121,7 +121,7 @@ export const executeRun = async (
       }
       log("info", `Composing brief with ${provider}/${model}…`)
       try {
-        const result = await composeBrief(provider, model, tasks, metrics)
+        const result = await composeBrief(model, tasks, metrics)
         run.brief = result.brief
         run.briefSource = "llm"
         run.llm = { provider, model, latencyMs: result.latencyMs }
