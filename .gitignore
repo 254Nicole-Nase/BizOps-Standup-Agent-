@@ -1,6 +1,9 @@
 node_modules/
 dist/
+data/
 .vscode/
 *.log
 .DS_Store
 .env
+.env.*
+!.env.example

@@ -1,0 +1,88 @@
+import type { LlmProvider, RunSettings } from "../src/shared/types"
+
+const env = (key: string) => process.env[key]?.trim() || undefined
+
+const num = (key: string, fallback: number) => {
+  const parsed = Number(env(key))
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+/**
+ * Services whose credentials are injected by an outbound proxy (e.g. Claude Code
+ * cloud "network secrets"). The app treats them as configured and sends no
+ * Authorization header, so the key never exists in this process.
+ */
+const injected = new Set(
+  (env("PROXY_INJECTED_CREDENTIALS") ?? "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean),
+)
+
+export const hasCredential = (service: "notion" | "slack", token?: string) =>
+  Boolean(token) || injected.has(service)
+
+/** Authorization header for a service, omitted when the proxy injects it. */
+export const authHeader = (token?: string): Record<string, string> =>
+  token ? { Authorization: `Bearer ${token}` } : {}
+
+export const config = {
+  port: num("PORT", 3000),
+  adminToken: env("ADMIN_TOKEN"),
+  dataDir: env("DATA_DIR") ?? "data",
+
+  notion: {
+    token: env("NOTION_TOKEN"),
+    databaseId: env("NOTION_DATABASE_ID"),
+    /** Optional JSON map overriding property names, e.g. {"owner":"Assignee"} */
+    propertyMap: env("NOTION_PROPERTY_MAP"),
+  },
+
+  slack: {
+    botToken: env("SLACK_BOT_TOKEN"),
+    webhookUrl: env("SLACK_WEBHOOK_URL"),
+    defaultChannel: env("SLACK_CHANNEL") ?? "#executive-updates",
+  },
+
+  gemini: {
+    apiKey: env("GEMINI_API_KEY"),
+    model: env("GEMINI_MODEL") ?? "gemini-2.5-flash",
+  },
+
+  schedule: {
+    cron: env("SCHEDULE_CRON"),
+    timezone: env("SCHEDULE_TZ") ?? "UTC",
+  },
+
+  gates: {
+    minConfidence: num("MIN_CONFIDENCE", 70),
+    highRiskLimit: num("HIGH_RISK_LIMIT", 2),
+  },
+}
+
+export const providerConfigured = (provider: LlmProvider) =>
+  provider === "gemini" ? Boolean(config.gemini.apiKey) : true
+
+export const defaultModel = (provider: LlmProvider) => (provider === "gemini" ? config.gemini.model : "deterministic")
+
+/** Gemini when a key is set, otherwise the deterministic writer. */
+export const defaultProvider = (): LlmProvider => (providerConfigured("gemini") ? "gemini" : "none")
+
+export const defaultSettings = (): RunSettings => {
+  const provider = defaultProvider()
+  return {
+    slackChannel: config.slack.defaultChannel,
+    provider,
+    model: defaultModel(provider),
+    minConfidence: config.gates.minConfidence,
+    highRiskLimit: config.gates.highRiskLimit,
+    autoPublish: false,
+  }
+}
+
+/** Merge run overrides onto the defaults. Choosing a provider without a model uses that provider's default model. */
+export const resolveSettings = (overrides: Partial<RunSettings>): RunSettings => {
+  const settings = { ...defaultSettings(), ...overrides }
+  if (overrides.provider && !overrides.model) settings.model = defaultModel(settings.provider)
+  return settings
+}
