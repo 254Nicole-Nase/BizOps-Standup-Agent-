@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai"
 import { z } from "zod"
 import type { Brief, LlmProvider, Metrics, Task } from "../src/shared/types"
-import { config } from "./config"
+import { authHeader, config } from "./config"
 
 const severity = z.enum(["high", "medium", "low"])
 
@@ -97,7 +97,7 @@ const callCerebras = async (model: string, user: string, jsonMode = true): Promi
   const response = await fetch(`${config.cerebras.baseUrl}/chat/completions`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${config.cerebras.apiKey}`,
+      ...authHeader(config.cerebras.apiKey),
       "Content-Type": "application/json",
     },
     body: JSON.stringify({

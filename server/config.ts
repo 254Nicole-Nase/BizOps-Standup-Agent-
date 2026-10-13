@@ -7,6 +7,25 @@ const num = (key: string, fallback: number) => {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+/**
+ * Services whose credentials are injected by an outbound proxy (e.g. Claude Code
+ * cloud "network secrets"). The app treats them as configured and sends no
+ * Authorization header, so the key never exists in this process.
+ */
+const injected = new Set(
+  (env("PROXY_INJECTED_CREDENTIALS") ?? "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean),
+)
+
+export const hasCredential = (service: "notion" | "slack" | "cerebras", token?: string) =>
+  Boolean(token) || injected.has(service)
+
+/** Authorization header for a service, omitted when the proxy injects it. */
+export const authHeader = (token?: string): Record<string, string> =>
+  token ? { Authorization: `Bearer ${token}` } : {}
+
 export const config = {
   port: num("PORT", 3000),
   adminToken: env("ADMIN_TOKEN"),
@@ -49,7 +68,7 @@ export const config = {
 
 export const providerConfigured = (provider: LlmProvider) =>
   provider === "cerebras"
-    ? Boolean(config.cerebras.apiKey)
+    ? hasCredential("cerebras", config.cerebras.apiKey)
     : provider === "gemini"
       ? Boolean(config.gemini.apiKey)
       : true
@@ -63,7 +82,7 @@ export const defaultModel = (provider: LlmProvider) =>
 
 /** Cerebras first (fastest), then Gemini, then the deterministic writer. */
 export const defaultProvider = (): LlmProvider =>
-  config.cerebras.apiKey ? "cerebras" : config.gemini.apiKey ? "gemini" : "none"
+  providerConfigured("cerebras") ? "cerebras" : providerConfigured("gemini") ? "gemini" : "none"
 
 export const defaultSettings = (): RunSettings => {
   const provider = defaultProvider()

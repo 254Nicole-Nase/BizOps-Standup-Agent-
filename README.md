@@ -45,6 +45,10 @@ With no keys set it runs end-to-end on demo data. Add keys one at a time:
 3. **Slack:** create an app with the `chat:write` scope, invite it to the channel, then set `SLACK_BOT_TOKEN` and `SLACK_CHANNEL`. A channel ID is the most reliable value.
 4. **Automation:** for example, `SCHEDULE_CRON="45 8 * * 1"` runs every Monday at 08:45.
 
+### Keys injected by a proxy (Claude Code cloud network secrets)
+
+If an outbound proxy adds the `Authorization` header for you, leave the token variables empty and set `PROXY_INJECTED_CREDENTIALS=notion,slack,cerebras`. Those services then count as configured, and the app never sends or holds the key. When `HTTPS_PROXY` is set, the server sends its API calls through it automatically. (Gemini authenticates with an API-key header rather than a Bearer token, so set `GEMINI_API_KEY` directly.)
+
 ## Scoring model
 
 Each open item earns points: blocked +3, at risk +2, open ≥2/3/5 days +1/+2/+3, overdue +3, due ≤7 days while flagged or below 80% +2, due ≤14 days below 50% +2, not started with a deadline inside 14 days +2. A score of 6 or more is **high**, 3 or more is **medium**, and 2 is **low**.

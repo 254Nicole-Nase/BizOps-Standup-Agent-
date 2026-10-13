@@ -1,5 +1,5 @@
 import type { Task, TaskStatus } from "../src/shared/types"
-import { config } from "./config"
+import { authHeader, config, hasCredential } from "./config"
 
 const NOTION_VERSION = "2022-06-28"
 const DAY_MS = 86_400_000
@@ -162,7 +162,7 @@ const notionFetch = async (path: string, body?: unknown) => {
   const response = await fetch(`https://api.notion.com/v1${path}`, {
     method: body ? "POST" : "GET",
     headers: {
-      Authorization: `Bearer ${config.notion.token}`,
+      ...authHeader(config.notion.token),
       "Notion-Version": NOTION_VERSION,
       "Content-Type": "application/json",
     },
@@ -176,7 +176,7 @@ const notionFetch = async (path: string, body?: unknown) => {
 }
 
 export const notionConfigured = () =>
-  Boolean(config.notion.token && config.notion.databaseId)
+  hasCredential("notion", config.notion.token) && Boolean(config.notion.databaseId)
 
 export const fetchDatabaseTitle = async () => {
   const database = await notionFetch(`/databases/${config.notion.databaseId}`)

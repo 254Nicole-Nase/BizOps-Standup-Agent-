@@ -1,5 +1,5 @@
 import type { Brief, Metrics, PublishRecord, Severity } from "../src/shared/types"
-import { config } from "./config"
+import { authHeader, config, hasCredential } from "./config"
 
 const HEALTH_EMOJI = { Green: ":large_green_circle:", Yellow: ":large_yellow_circle:", Red: ":red_circle:" }
 const SEVERITY_LABEL: Record<Severity, string> = {
@@ -85,7 +85,7 @@ export const briefToBlocks = (brief: Brief, metrics: Metrics, now = new Date()) 
 }
 
 export const slackMode = (): PublishRecord["mode"] =>
-  config.slack.botToken ? "bot" : config.slack.webhookUrl ? "webhook" : "dry_run"
+  hasCredential("slack", config.slack.botToken) ? "bot" : config.slack.webhookUrl ? "webhook" : "dry_run"
 
 export const postToSlack = async (
   channel: string,
@@ -98,7 +98,7 @@ export const postToSlack = async (
     const response = await fetch("https://slack.com/api/chat.postMessage", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${config.slack.botToken}`,
+        ...authHeader(config.slack.botToken),
         "Content-Type": "application/json; charset=utf-8",
       },
       body: JSON.stringify({ channel, text, blocks, unfurl_links: false }),
@@ -108,7 +108,7 @@ export const postToSlack = async (
 
     const link = await fetch(
       `https://slack.com/api/chat.getPermalink?channel=${json.channel}&message_ts=${json.ts}`,
-      { headers: { Authorization: `Bearer ${config.slack.botToken}` } },
+      { headers: authHeader(config.slack.botToken) },
     )
       .then((res) => res.json() as Promise<any>)
       .catch(() => null)

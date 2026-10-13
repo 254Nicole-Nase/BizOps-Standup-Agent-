@@ -1,4 +1,5 @@
 import "dotenv/config"
+import { EnvHttpProxyAgent, setGlobalDispatcher } from "undici"
 import express, { type NextFunction, type Request, type Response } from "express"
 import path from "node:path"
 import { z } from "zod"
@@ -33,6 +34,9 @@ const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
 }
 
 let databaseTitle: string | undefined
+
+// Node's built-in fetch ignores HTTPS_PROXY; route it through the proxy when one is set.
+if (process.env.HTTPS_PROXY || process.env.https_proxy) setGlobalDispatcher(new EnvHttpProxyAgent())
 
 async function startServer() {
   const app = express()
