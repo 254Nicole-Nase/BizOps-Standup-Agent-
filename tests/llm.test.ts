@@ -35,11 +35,11 @@ describe("composeBrief (Gemini)", () => {
 
   it("returns a validated brief", async () => {
     generateContent.mockResolvedValue(reply(JSON.stringify(validBrief)))
-    const result = await composeBrief("gemini-flash-latest", tasks, metrics)
+    const result = await composeBrief("gemini-2.5-flash", tasks, metrics)
     expect(result.brief.headline).toBe(validBrief.headline)
     expect(result.attempts).toBe(1)
     const request = generateContent.mock.calls[0][0]
-    expect(request.model).toBe("gemini-flash-latest")
+    expect(request.model).toBe("gemini-2.5-flash")
     expect(request.config.responseMimeType).toBe("application/json")
   })
 

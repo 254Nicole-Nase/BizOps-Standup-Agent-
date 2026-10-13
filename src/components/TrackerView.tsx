@@ -1,17 +1,10 @@
+import { TASK_STATUS_LABEL as STATUS_LABEL } from "@/lib/copy"
 import type { Task, TaskStatus } from "@/shared/types"
-
-const STATUS_LABEL: Record<TaskStatus, string> = {
-  done: "Done",
-  in_progress: "In progress",
-  at_risk: "At risk",
-  blocked: "Blocked",
-  not_started: "Not started",
-}
 
 const ORDER: TaskStatus[] = ["blocked", "at_risk", "in_progress", "not_started", "done"]
 
 export default function TrackerView({ tasks }: { tasks: Task[] }) {
-  if (tasks.length === 0) return <p className="muted">No tracker items loaded yet.</p>
+  if (tasks.length === 0) return <p className="empty-note">No projects loaded yet.</p>
   const sorted = [...tasks].sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status))
 
   return (
@@ -51,7 +44,11 @@ export default function TrackerView({ tasks }: { tasks: Task[] }) {
                   <span>{task.progress}%</span>
                 </div>
               </td>
-              <td className="mono">{task.dueDate ?? "—"}</td>
+              <td className="nowrap">
+                {task.dueDate
+                  ? new Date(`${task.dueDate}T12:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" })
+                  : "—"}
+              </td>
             </tr>
           ))}
         </tbody>

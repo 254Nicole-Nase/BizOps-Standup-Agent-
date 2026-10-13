@@ -39,7 +39,7 @@ pnpm dev               # http://localhost:3000
 
 With no keys set it runs end-to-end on demo data. Add keys one at a time:
 
-1. **LLM:** set `GEMINI_API_KEY` (optionally `GEMINI_MODEL`, default `gemini-flash-latest`).
+1. **LLM:** set `GEMINI_API_KEY` (optionally `GEMINI_MODEL`, default `gemini-2.5-flash`).
 2. **Notion:** create an internal integration, share your tracker database with it, then set `NOTION_TOKEN` and `NOTION_DATABASE_ID`.
    Recommended columns: `Project` (title), `Owner` (person), `Status` (status), `Progress` (number, 0-1 or 0-100), `Blocker` (text), `Blocked Since` (date), `Due` (date), `Update` (text).
 3. **Slack:** create an app with the `chat:write` scope, invite it to the channel, then set `SLACK_BOT_TOKEN` and `SLACK_CHANNEL`. A channel ID is the most reliable value.

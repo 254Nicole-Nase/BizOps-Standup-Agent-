@@ -1,7 +1,8 @@
+import { SEVERITY_LABEL } from "@/lib/copy"
 import type { RiskItem } from "@/shared/types"
 
 export default function RisksView({ risks }: { risks: RiskItem[] }) {
-  if (risks.length === 0) return <p className="muted">No risks detected in this cycle.</p>
+  if (risks.length === 0) return <p className="empty-note">Nothing at risk this week. Nice.</p>
 
   return (
     <div className="blocker-grid">
@@ -9,9 +10,10 @@ export default function RisksView({ risks }: { risks: RiskItem[] }) {
         <article key={risk.taskId} className="blocker-row">
           <div className="blocker-head">
             <h3>{risk.project}</h3>
-            <span className={`severity-pill ${risk.severity}`}>{risk.severity}</span>
+            <span className={`severity-pill ${risk.severity}`}>{SEVERITY_LABEL[risk.severity]}</span>
           </div>
           <p>{risk.summary}</p>
+          <p className="signal-head">Why it's flagged</p>
           <div className="signal-row">
             {risk.signals.map((signal) => (
               <span key={signal} className="signal-chip">
@@ -20,7 +22,7 @@ export default function RisksView({ risks }: { risks: RiskItem[] }) {
             ))}
           </div>
           <div className="blocker-meta">
-            <span>Owner: {risk.owner}</span>
+            <span>{risk.owner}</span>
             <span>
               {risk.dueInDays === null
                 ? "No due date"
@@ -29,7 +31,9 @@ export default function RisksView({ risks }: { risks: RiskItem[] }) {
                   : `Due in ${risk.dueInDays}d`}
             </span>
           </div>
-          <div className="blocker-action">Next action: {risk.recommendedAction}</div>
+          <div className="blocker-action">
+            <strong>Suggested next step:</strong> {risk.recommendedAction}
+          </div>
         </article>
       ))}
     </div>

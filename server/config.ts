@@ -46,7 +46,7 @@ export const config = {
 
   gemini: {
     apiKey: env("GEMINI_API_KEY"),
-    model: env("GEMINI_MODEL") ?? "gemini-flash-latest",
+    model: env("GEMINI_MODEL") ?? "gemini-2.5-flash",
   },
 
   schedule: {

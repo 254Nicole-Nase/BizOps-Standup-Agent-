@@ -15,7 +15,7 @@ export default function ConfidenceTrend({ runs, threshold }: { runs: RunSummary[
     .map((run) => ({ number: run.number, value: run.metrics!.confidence, at: run.startedAt }))
 
   if (points.length < 2) {
-    return <p className="muted">The trend appears after two completed runs.</p>
+    return <p className="empty-note">A trend line appears after two briefs.</p>
   }
 
   const plotW = WIDTH - PAD.left - PAD.right
@@ -31,7 +31,7 @@ export default function ConfidenceTrend({ runs, threshold }: { runs: RunSummary[
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
         className="trend-svg"
         role="img"
-        aria-label={`Delivery confidence over the last ${points.length} runs`}
+        aria-label={`On-track score over the last ${points.length} briefs`}
         onMouseLeave={() => setHover(null)}
       >
         {[0, 50, 100].map((tick) => (
@@ -50,7 +50,7 @@ export default function ConfidenceTrend({ runs, threshold }: { runs: RunSummary[
           className="trend-threshold"
         />
         <text x={WIDTH - PAD.right} y={y(threshold) - 4} className="trend-axis" textAnchor="end">
-          gate {threshold}%
+          min {threshold}%
         </text>
         <path d={path} className="trend-line" />
         {active && <line x1={x(hover!)} x2={x(hover!)} y1={PAD.top} y2={PAD.top + plotH} className="trend-cross" />}
@@ -77,12 +77,12 @@ export default function ConfidenceTrend({ runs, threshold }: { runs: RunSummary[
       <div className="trend-readout">
         {active ? (
           <>
-            Run #{active.number} · <strong>{active.value}%</strong> ·{" "}
+            Brief #{active.number} · <strong>{active.value}%</strong> ·{" "}
             {new Date(active.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
           </>
         ) : (
           <>
-            Latest <strong>{points[points.length - 1].value}%</strong> · hover for detail
+            On-track score, latest <strong>{points[points.length - 1].value}%</strong>
           </>
         )}
       </div>

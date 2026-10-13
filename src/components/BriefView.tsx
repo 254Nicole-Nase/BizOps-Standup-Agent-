@@ -1,8 +1,8 @@
 import { useState } from "react"
+import { friendlyModel, HEALTH_LABEL, SEVERITY_LABEL } from "@/lib/copy"
 import type { RunRecord } from "@/shared/types"
 
-const HEALTH_DOT = { Green: "dot-green", Yellow: "dot-yellow", Red: "dot-red" }
-const SEVERITY_ICON = { high: "▲", medium: "◆", low: "•" }
+const HEALTH_DOT = { Green: "dot-good", Yellow: "dot-warn", Red: "dot-bad" }
 
 export default function BriefView({ run }: { run: RunRecord }) {
   const [raw, setRaw] = useState(false)
@@ -14,13 +14,13 @@ export default function BriefView({ run }: { run: RunRecord }) {
       <div className="brief-toolbar">
         <span className={`source-chip ${run.briefSource}`}>
           {run.briefSource === "llm"
-            ? `Written by ${run.llm?.provider} · ${run.llm?.model} · ${((run.llm?.latencyMs ?? 0) / 1000).toFixed(1)}s`
+            ? `Written by ${friendlyModel(run.llm?.model)} in ${((run.llm?.latencyMs ?? 0) / 1000).toFixed(0)}s`
             : run.llm?.error
-              ? "Template fallback (LLM failed)"
-              : "Deterministic template"}
+              ? "Basic template (the AI was unavailable)"
+              : "Basic template"}
         </span>
-        <button className="link-button" onClick={() => setRaw((value) => !value)}>
-          {raw ? "Show preview" : "Show Slack mrkdwn"}
+        <button className="link" onClick={() => setRaw((value) => !value)}>
+          {raw ? "Show as Slack will look" : "Show plain text"}
         </button>
       </div>
 
@@ -33,23 +33,23 @@ export default function BriefView({ run }: { run: RunRecord }) {
             <div className="slack-meta">
               <strong>BizOps Standup Agent</strong>
               <span className="slack-app-tag">APP</span>
-              <span className="muted">{run.settings.slackChannel}</span>
+              <span className="muted">in {run.settings.slackChannel}</span>
             </div>
 
             <h3 className="slack-headline">
-              <span className={`health-dot ${HEALTH_DOT[metrics.health]}`} aria-label={metrics.health} />
+              <span className={`dot ${HEALTH_DOT[metrics.health]}`} aria-label={HEALTH_LABEL[metrics.health]} />
               {brief.headline}
             </h3>
             <p className="slack-text">{brief.summary}</p>
 
             <div className="slack-fields">
               <div>
-                <span>Health</span>
-                {metrics.health} · {metrics.confidence}%
+                <span>Status</span>
+                {HEALTH_LABEL[metrics.health]} · {metrics.confidence}%
               </div>
               <div>
-                <span>Delivered</span>
-                {metrics.completedTasks}/{metrics.totalTasks} items
+                <span>Done</span>
+                {metrics.completedTasks} of {metrics.totalTasks} projects
               </div>
               <div>
                 <span>Blocked / at risk</span>
@@ -78,7 +78,7 @@ export default function BriefView({ run }: { run: RunRecord }) {
                 {brief.risks.map((risk) => (
                   <div key={`${risk.project}-${risk.issue}`} className="slack-risk">
                     <span className={`severity-pill ${risk.severity}`}>
-                      {SEVERITY_ICON[risk.severity]} {risk.severity}
+                      {SEVERITY_LABEL[risk.severity]}
                     </span>
                     <div>
                       <p>
@@ -95,7 +95,7 @@ export default function BriefView({ run }: { run: RunRecord }) {
 
             {brief.leadershipAsks.length > 0 && (
               <section className="slack-section">
-                <h4>Asks for leadership</h4>
+                <h4>What we need from leadership</h4>
                 <ul>
                   {brief.leadershipAsks.map((ask) => (
                     <li key={ask}>{ask}</li>
@@ -106,7 +106,7 @@ export default function BriefView({ run }: { run: RunRecord }) {
 
             {brief.nextWeekFocus.length > 0 && (
               <section className="slack-section">
-                <h4>Next week</h4>
+                <h4>Focus next week</h4>
                 <ul>
                   {brief.nextWeekFocus.map((item) => (
                     <li key={item}>{item}</li>
