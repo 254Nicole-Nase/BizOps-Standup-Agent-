@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
+import AccessGate from "@/components/AccessGate"
 import AtAGlance from "@/components/AtAGlance"
 import BriefView from "@/components/BriefView"
 import Checks from "@/components/Checks"
@@ -48,29 +49,40 @@ export default function App() {
   const [token, setToken] = useState(getAdminToken())
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
+  const [locked, setLocked] = useState<"empty" | "wrong" | null>(null)
 
   const refreshRuns = useCallback(() => api.runs().then(setRuns).catch(() => {}), [])
 
-  useEffect(() => {
-    api
-      .status()
-      .then((loaded) => {
-        setStatus(loaded)
-        setSettings(loaded.defaults)
-      })
-      .catch((err) => setError(`Can't reach the server: ${err.message}`))
-    api
-      .runs()
-      .then(async (loaded) => {
-        setRuns(loaded)
-        if (loaded[0]) setRun(await api.run(loaded[0].id))
-        else {
-          setPreviewTasks((await api.tasks()).tasks)
-          if (!readFlag(ONBOARDED_KEY)) setHelpOpen(true)
-        }
-      })
-      .catch(() => {})
+  const load = useCallback(async () => {
+    try {
+      const loaded = await api.status()
+      setLocked(null)
+      setStatus(loaded)
+      setSettings(loaded.defaults)
+    } catch (err) {
+      if ((err as { status?: number }).status === 401) {
+        setLocked(getAdminToken() ? "wrong" : "empty")
+        return
+      }
+      setError(`Can't reach the server: ${err instanceof Error ? err.message : String(err)}`)
+      return
+    }
+    try {
+      const loaded = await api.runs()
+      setRuns(loaded)
+      if (loaded[0]) setRun(await api.run(loaded[0].id))
+      else {
+        setPreviewTasks((await api.tasks()).tasks)
+        if (!readFlag(ONBOARDED_KEY)) setHelpOpen(true)
+      }
+    } catch {
+      // History is optional; the dashboard still works without it.
+    }
   }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   // Keep the last known project list so counts don't drop to zero while a new run starts.
   useEffect(() => {
@@ -161,6 +173,18 @@ export default function App() {
     ["projects", "Projects", tasks.length],
     ["activity", "Activity", undefined],
   ]
+
+  if (locked)
+    return (
+      <AccessGate
+        failed={locked === "wrong"}
+        onSubmit={(code) => {
+          setAdminToken(code)
+          setToken(code)
+          load()
+        }}
+      />
+    )
 
   return (
     <div className="app">

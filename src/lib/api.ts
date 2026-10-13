@@ -28,7 +28,7 @@ const headers = () => ({
 const request = async <T,>(url: string, init?: RequestInit): Promise<T> => {
   const response = await fetch(url, { ...init, headers: headers() })
   const json = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(json.error ?? `Request failed (${response.status})`)
+  if (!response.ok) throw Object.assign(new Error(json.error ?? `Request failed (${response.status})`), { status: response.status })
   return json as T
 }
 

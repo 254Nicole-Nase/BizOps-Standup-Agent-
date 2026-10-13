@@ -1,6 +1,7 @@
 import "dotenv/config"
 import { EnvHttpProxyAgent, setGlobalDispatcher } from "undici"
 import express, { type NextFunction, type Request, type Response } from "express"
+import { timingSafeEqual } from "node:crypto"
 import path from "node:path"
 import { z } from "zod"
 import type { RunEvent, ServerStatus } from "./src/shared/types"
@@ -27,10 +28,19 @@ const asyncRoute =
   (req: Request, res: Response, next: NextFunction) =>
     handler(req, res).catch(next)
 
-/** If ADMIN_TOKEN is set, anything that runs the agent or posts to Slack needs it. */
+const tokenMatches = (given: string | undefined, expected: string) => {
+  const a = Buffer.from(given ?? "")
+  const b = Buffer.from(expected)
+  return a.length === b.length && timingSafeEqual(a, b)
+}
+
+/**
+ * If ADMIN_TOKEN is set, every API route except the health check needs it: on a public host the
+ * tracker data and past briefs are as sensitive as the ability to post to Slack.
+ */
 const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (!config.adminToken || req.get("x-admin-token") === config.adminToken) return next()
-  res.status(401).json({ error: "Admin token required" })
+  if (!config.adminToken || tokenMatches(req.get("x-admin-token"), config.adminToken)) return next()
+  res.status(401).json({ error: "Access code required" })
 }
 
 let databaseTitle: string | undefined
@@ -43,6 +53,7 @@ async function startServer() {
   app.use(express.json({ limit: "100kb" }))
 
   app.get("/api/health", (_req, res) => res.json({ ok: true }))
+  app.use("/api", requireAdmin)
 
   app.get(
     "/api/status",
@@ -95,7 +106,6 @@ async function startServer() {
   // Start a run and stream progress as newline-delimited JSON events.
   app.post(
     "/api/runs",
-    requireAdmin,
     asyncRoute(async (req, res) => {
       const parsed = settingsSchema.safeParse(req.body?.settings ?? {})
       if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message })
@@ -121,7 +131,6 @@ async function startServer() {
 
   app.post(
     "/api/runs/:id/publish",
-    requireAdmin,
     asyncRoute(async (req, res) => {
       const run = await approveAndPublish(String(req.params.id), req.body?.override === true)
       res.json({ run })

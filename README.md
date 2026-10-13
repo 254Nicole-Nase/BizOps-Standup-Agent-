@@ -49,6 +49,18 @@ With no keys set it runs end-to-end on demo data. Add keys one at a time:
 
 If an outbound proxy adds the `Authorization` header for you, leave the token variables empty and set `PROXY_INJECTED_CREDENTIALS=notion,slack`. Those services then count as configured, and the app never sends or holds the key. When `HTTPS_PROXY` is set, the server sends its API calls through it automatically. (Gemini authenticates with an API-key header rather than a Bearer token, so set `GEMINI_API_KEY` directly.)
 
+## Deploying (Render)
+
+The app is one Node web service: Express serves the API and the built dashboard.
+
+- **Build command:** `npx pnpm@10 install --frozen-lockfile && npx pnpm@10 build`
+- **Start command:** `npx pnpm@10 start`
+- **Environment:** `GEMINI_API_KEY`, `NOTION_TOKEN`, `NOTION_DATABASE_ID`, `SLACK_BOT_TOKEN`, `SLACK_CHANNEL`, and `ADMIN_TOKEN`.
+
+Always set `ADMIN_TOKEN` on a public host. Every API route except `/api/health` then requires it, and the dashboard asks for it as an access code. Without it, anyone with the link can read your tracker and post to Slack.
+
+Run history is written to `DATA_DIR` (default `data/`). On a host without a persistent disk it resets on each deploy.
+
 ## Scoring model
 
 Each open item earns points: blocked +3, at risk +2, open ≥2/3/5 days +1/+2/+3, overdue +3, due ≤7 days while flagged or below 80% +2, due ≤14 days below 50% +2, not started with a deadline inside 14 days +2. A score of 6 or more is **high**, 3 or more is **medium**, and 2 is **low**.
