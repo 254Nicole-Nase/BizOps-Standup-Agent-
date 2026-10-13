@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { computeMetrics, fallbackBrief } from "../server/analysis"
 import { config } from "../server/config"
-import { composeBrief, extractJson } from "../server/llm"
+import { composeBrief, extractJson, retryPolicy } from "../server/llm"
 import { sampleTasks } from "../server/sampleData"
 
 const tasks = sampleTasks()
@@ -58,5 +58,36 @@ describe("composeBrief (Cerebras)", () => {
       vi.fn().mockResolvedValue(new Response(JSON.stringify({ message: "bad key" }), { status: 401 })),
     )
     await expect(composeBrief("cerebras", "m", tasks, metrics)).rejects.toThrow("Cerebras 401: bad key")
+  })
+})
+
+describe("transient provider errors", () => {
+  retryPolicy.delaysMs = [0, 0]
+  const failure = (status: number) => new Response(JSON.stringify({ message: "busy" }), { status })
+
+  it("retries a 503 and then succeeds", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(failure(503))
+      .mockResolvedValueOnce(failure(429))
+      .mockResolvedValueOnce(completion(JSON.stringify(validBrief)))
+    vi.stubGlobal("fetch", fetchMock)
+    const result = await composeBrief("cerebras", "gpt-oss-120b", tasks, metrics)
+    expect(result.brief.headline).toBe(validBrief.headline)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it("gives up after the retries run out", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(failure(503))
+    vi.stubGlobal("fetch", fetchMock)
+    await expect(composeBrief("cerebras", "gpt-oss-120b", tasks, metrics)).rejects.toThrow("Cerebras 503")
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it("does not retry a non-transient error such as 402", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(failure(402))
+    vi.stubGlobal("fetch", fetchMock)
+    await expect(composeBrief("cerebras", "gpt-oss-120b", tasks, metrics)).rejects.toThrow("Cerebras 402")
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })

@@ -95,3 +95,10 @@ export const defaultSettings = (): RunSettings => {
     autoPublish: false,
   }
 }
+
+/** Merge run overrides onto the defaults. Choosing a provider without a model uses that provider's default model. */
+export const resolveSettings = (overrides: Partial<RunSettings>): RunSettings => {
+  const settings = { ...defaultSettings(), ...overrides }
+  if (overrides.provider && !overrides.model) settings.model = defaultModel(settings.provider)
+  return settings
+}

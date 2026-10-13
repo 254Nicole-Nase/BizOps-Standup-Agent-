@@ -119,11 +119,29 @@ const callCerebras = async (model: string, user: string, jsonMode = true): Promi
     if (jsonMode && response.status === 400 && /response_format|json/i.test(message)) {
       return callCerebras(model, user, false)
     }
-    throw new Error(`Cerebras ${response.status}: ${message}`)
+    throw Object.assign(new Error(`Cerebras ${response.status}: ${message}`), { status: response.status })
   }
   const content = json?.choices?.[0]?.message?.content
   if (!content) throw new Error("Cerebras returned an empty completion")
   return content
+}
+
+/** Backoff before each retry of a transient provider error (rate limit or 5xx). Tests set this to zeros. */
+export const retryPolicy = { delaysMs: [1500, 4000] }
+
+const TRANSIENT_STATUSES = new Set([429, 500, 502, 503, 504])
+
+const isTransient = (error: unknown) => TRANSIENT_STATUSES.has(Number((error as { status?: unknown })?.status))
+
+const withRetry = async <T>(fn: () => Promise<T>): Promise<T> => {
+  for (let retry = 0; ; retry += 1) {
+    try {
+      return await fn()
+    } catch (error) {
+      if (retry >= retryPolicy.delaysMs.length || !isTransient(error)) throw error
+      await new Promise((resolve) => setTimeout(resolve, retryPolicy.delaysMs[retry]))
+    }
+  }
 }
 
 let gemini: GoogleGenAI | null = null
@@ -165,7 +183,7 @@ export const composeBrief = async (
   let lastError = ""
 
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const reply = await call(model, prompt)
+    const reply = await withRetry(() => call(model, prompt))
     try {
       const parsed = briefSchema.safeParse(extractJson(reply))
       if (parsed.success) {

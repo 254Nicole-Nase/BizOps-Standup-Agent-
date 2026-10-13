@@ -4,7 +4,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import path from "node:path"
 import { z } from "zod"
 import type { RunEvent, ServerStatus } from "./src/shared/types"
-import { config, defaultModel, defaultSettings, providerConfigured } from "./server/config"
+import { config, defaultModel, defaultSettings, providerConfigured, resolveSettings } from "./server/config"
 import { fetchDatabaseTitle, notionConfigured } from "./server/notion"
 import { approveAndPublish, executeRun, isRunning, loadTasks } from "./server/pipeline"
 import { scheduleStatus, startScheduler } from "./server/scheduler"
@@ -101,7 +101,7 @@ async function startServer() {
       if (!parsed.success) return res.status(400).json({ error: parsed.error.issues[0]?.message })
       if (isRunning()) return res.status(409).json({ error: "A run is already in progress" })
 
-      const settings = { ...defaultSettings(), ...parsed.data }
+      const settings = resolveSettings(parsed.data)
       res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8")
       res.setHeader("Cache-Control", "no-cache")
       res.setHeader("X-Accel-Buffering", "no")
