@@ -49,7 +49,7 @@ export default function ConfidenceTrend({ runs, threshold }: { runs: RunSummary[
           y2={y(threshold)}
           className="trend-threshold"
         />
-        <text x={WIDTH - PAD.right} y={y(threshold) - 4} className="trend-axis" textAnchor="end">
+        <text x={WIDTH - PAD.right} y={y(threshold) + 11} className="trend-axis" textAnchor="end">
           min {threshold}%
         </text>
         <path d={path} className="trend-line" />
@@ -77,7 +77,7 @@ export default function ConfidenceTrend({ runs, threshold }: { runs: RunSummary[
       <div className="trend-readout">
         {active ? (
           <>
-            Brief #{active.number} · <strong>{active.value}%</strong> ·{" "}
+            Brief #{active.number}: <strong>{active.value}%</strong> on{" "}
             {new Date(active.at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
           </>
         ) : (

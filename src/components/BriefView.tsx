@@ -45,7 +45,7 @@ export default function BriefView({ run }: { run: RunRecord }) {
             <div className="slack-fields">
               <div>
                 <span>Status</span>
-                {HEALTH_LABEL[metrics.health]} · {metrics.confidence}%
+                {HEALTH_LABEL[metrics.health]}, {metrics.confidence}%
               </div>
               <div>
                 <span>Done</span>

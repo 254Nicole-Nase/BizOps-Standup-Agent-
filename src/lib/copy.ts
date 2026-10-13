@@ -7,6 +7,9 @@ export const HEALTH_LABEL: Record<Health, string> = {
   Red: "Off track",
 }
 
+/** The red/amber/green word reporting teams already use. */
+export const RAG_LABEL: Record<Health, string> = { Green: "Green", Yellow: "Amber", Red: "Red" }
+
 export const SEVERITY_LABEL: Record<Severity, string> = {
   high: "Urgent",
   medium: "Watch",
@@ -38,12 +41,23 @@ export const PHASE_PROGRESS: Record<PhaseId, string> = {
   publish: "Posting to Slack…",
 }
 
-/** The three steps a person sees, each covering one or more pipeline phases. */
-export const STEPS: { title: string; detail: string; phases: PhaseId[] }[] = [
-  { title: "Gather", detail: "Reads every project in your Notion tracker and flags what's at risk.", phases: ["ingest", "analyze"] },
-  { title: "Draft", detail: "AI writes a short update, then the facts are checked against Notion.", phases: ["compose", "gate"] },
-  { title: "Review & share", detail: "You read it and post it to Slack. Nothing is sent without your OK.", phases: ["publish"] },
+/** Stops on the route line, one per pipeline phase, named the way a person would say them. */
+export const STATIONS: { id: PhaseId; name: string }[] = [
+  { id: "ingest", name: "Notion" },
+  { id: "analyze", name: "Risk scan" },
+  { id: "compose", name: "AI draft" },
+  { id: "gate", name: "Checks" },
+  { id: "publish", name: "Slack" },
 ]
+
+/** ISO-8601 week number, the unit status reports are usually filed under. */
+export const isoWeek = (date: Date) => {
+  const day = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+  const weekday = day.getUTCDay() || 7
+  day.setUTCDate(day.getUTCDate() + 4 - weekday)
+  const yearStart = new Date(Date.UTC(day.getUTCFullYear(), 0, 1))
+  return Math.ceil(((day.getTime() - yearStart.getTime()) / 86400000 + 1) / 7)
+}
 
 export const friendlyModel = (model?: string) =>
   model

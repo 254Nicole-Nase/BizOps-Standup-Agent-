@@ -1,53 +1,76 @@
-import Icon from "@/components/Icon"
-import { HEALTH_LABEL } from "@/lib/copy"
 import type { Metrics } from "@/shared/types"
 
-/** Headline numbers from the latest scoring, with a short explanation of the score. */
-export default function AtAGlance({ metrics, projectCount }: { metrics?: Metrics; projectCount: number }) {
+/**
+ * The on-track score drawn on its real 0–100 scale, with the Amber (65) and Green (80) bands
+ * and the pass line from settings, so "71" reads as "just over the line" at a glance.
+ */
+export default function AtAGlance({
+  metrics,
+  projectCount,
+  threshold,
+}: {
+  metrics?: Metrics
+  projectCount: number
+  threshold: number
+}) {
   return (
-    <section className="card panel">
-      <div className="panel-head">
-        <h2>At a glance</h2>
-        {metrics && <span className={`health-chip health-${metrics.health.toLowerCase()}`}>{HEALTH_LABEL[metrics.health]}</span>}
-      </div>
+    <section className="panel">
+      <h2 className="panel-title">On-track score</h2>
 
       {metrics ? (
         <>
-          <div className="score">
-            <div className="score-ring" style={{ ["--value" as string]: metrics.confidence }} data-health={metrics.health}>
-              <span>{metrics.confidence}</span>
+          <div className="score-line">
+            <span className="score-number" data-health={metrics.health}>
+              {metrics.confidence}
+            </span>
+            <span className="score-of">out of 100</span>
+          </div>
+
+          <div className="scale" role="img" aria-label={`Score ${metrics.confidence} of 100. Pass line ${threshold}.`}>
+            <div className="scale-bands">
+              <span className="band band-red" style={{ width: "65%" }} />
+              <span className="band band-amber" style={{ width: "15%" }} />
+              <span className="band band-green" style={{ width: "20%" }} />
             </div>
-            <div>
-              <p className="score-title">On-track score</p>
-              <p className="panel-sub">
-                Out of 100. Worked out from your tracker (status, blockers and due dates), not by AI.
-              </p>
+            <span className="scale-pass" style={{ left: `${threshold}%` }}>
+              <span>pass {threshold}</span>
+            </span>
+            <span className="scale-marker" style={{ left: `${metrics.confidence}%` }} />
+            <div className="scale-ticks">
+              <span>0</span>
+              <span style={{ left: "65%" }}>65</span>
+              <span style={{ left: "80%" }}>80</span>
+              <span style={{ left: "100%" }}>100</span>
             </div>
           </div>
-          <dl className="stats">
+
+          <p className="panel-note">Worked out from your tracker (status, blockers, due dates), not by AI.</p>
+
+          <dl className="tally">
             <div>
               <dt>Done</dt>
               <dd>
                 {metrics.completedTasks}
-                <small> of {metrics.totalTasks}</small>
+                <small>/{metrics.totalTasks}</small>
               </dd>
             </div>
             <div>
               <dt>Urgent</dt>
-              <dd className={metrics.highSeverityRisks ? "text-bad" : ""}>{metrics.highSeverityRisks}</dd>
+              <dd className={metrics.highSeverityRisks ? "is-bad" : ""}>{metrics.highSeverityRisks}</dd>
             </div>
             <div>
               <dt>Overdue</dt>
-              <dd className={metrics.overdueTasks ? "text-warn" : ""}>{metrics.overdueTasks}</dd>
+              <dd className={metrics.overdueTasks ? "is-warn" : ""}>{metrics.overdueTasks}</dd>
+            </div>
+            <div>
+              <dt>Blocked</dt>
+              <dd className={metrics.blockedTasks ? "is-bad" : ""}>{metrics.blockedTasks}</dd>
             </div>
           </dl>
         </>
       ) : (
-        <p className="empty-note">
-          <Icon name="info" size={16} />
-          {projectCount
-            ? `${projectCount} projects in your tracker. Scores appear once a brief is written.`
-            : "Scores appear once a brief is written."}
+        <p className="panel-note">
+          {projectCount ? `${projectCount} projects in your tracker. ` : ""}The score appears once a brief is written.
         </p>
       )}
     </section>

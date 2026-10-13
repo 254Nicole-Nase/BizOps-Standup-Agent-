@@ -5,6 +5,7 @@ import Checks from "@/components/Checks"
 import History from "@/components/History"
 import HowItWorks from "@/components/HowItWorks"
 import Icon from "@/components/Icon"
+import Lamps from "@/components/Lamps"
 import RisksView from "@/components/RisksView"
 import SettingsDrawer from "@/components/SettingsDrawer"
 import StatusHero from "@/components/StatusHero"
@@ -154,20 +155,20 @@ export default function App() {
       ]
     : []
 
-  const tabs: [Tab, string][] = [
-    ["brief", "Brief"],
-    ["risks", `Risks${metrics ? ` · ${metrics.risks.length}` : ""}`],
-    ["projects", `Projects · ${tasks.length}`],
-    ["activity", "Activity"],
+  const tabs: [Tab, string, number | undefined][] = [
+    ["brief", "Brief", undefined],
+    ["risks", "Risks", metrics?.risks.length],
+    ["projects", "Projects", tasks.length],
+    ["activity", "Activity", undefined],
   ]
 
   return (
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <div className="brand-mark" aria-hidden="true">
-            <Icon name="sparkle" size={18} />
-          </div>
+          <span className="brand-mark" aria-hidden="true">
+            <Lamps health={run?.metrics?.health} size="sm" />
+          </span>
           <div>
             <p className="brand-name">BizOps Standup Agent</p>
             <p className="brand-sub">
@@ -221,9 +222,9 @@ export default function App() {
       />
 
       <main className="layout">
-        <section className="card main-card">
+        <section className="sheet">
           <div className="tabs" role="tablist">
-            {tabs.map(([id, label]) => (
+            {tabs.map(([id, label, count]) => (
               <button
                 key={id}
                 role="tab"
@@ -232,6 +233,7 @@ export default function App() {
                 onClick={() => setTab(id)}
               >
                 {label}
+                {count !== undefined && <span className="tab-count">{count}</span>}
               </button>
             ))}
           </div>
@@ -249,9 +251,6 @@ export default function App() {
                 </div>
               ) : (
                 <div className="empty">
-                  <div className="empty-art" aria-hidden="true">
-                    <Icon name="sparkle" size={28} />
-                  </div>
                   <h3>No brief yet</h3>
                   <p>
                     When you write one, a preview shows here exactly as it will look in Slack.
@@ -263,7 +262,7 @@ export default function App() {
               (metrics ? (
                 <RisksView risks={metrics.risks} />
               ) : (
-                <p className="empty-note">Risks show here after the first brief.</p>
+                <p className="panel-note">Risks show here after the first brief.</p>
               ))}
             {tab === "projects" && <TrackerView tasks={tasks} />}
             {tab === "activity" && (
@@ -275,7 +274,7 @@ export default function App() {
                     <time>{time(entry.at)}</time>
                   </li>
                 ))}
-                {!run && <p className="empty-note">Each step is listed here as the agent works.</p>}
+                {!run && <p className="panel-note">Each step is listed here as the agent works.</p>}
               </ol>
             )}
           </div>
@@ -283,7 +282,7 @@ export default function App() {
 
         <aside className="side">
           <Checks run={run} />
-          <AtAGlance metrics={metrics} projectCount={tasks.length} />
+          <AtAGlance metrics={metrics} projectCount={tasks.length} threshold={settings?.minConfidence ?? 70} />
           <History runs={runs} activeId={run?.id} threshold={settings?.minConfidence ?? 70} onOpen={openRun} />
         </aside>
       </main>
