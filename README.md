@@ -1,60 +1,76 @@
 # BizOps Standup Agent
 
-An operations-focused standup assistant that turns weekly project updates into executive-ready Slack summaries.
+An AI operations agent that turns a Notion project tracker into a weekly executive brief in Slack. It runs a deterministic risk-scoring step, has an LLM (Cerebras or Gemini) write the brief, checks that brief against quality gates, and asks a human to approve when anything looks off.
 
-## Product Concept
+```
+Notion DB ──▶ Ingest ──▶ Score risk ──▶ Compose (LLM) ──▶ Quality gates ──▶ Slack
+              Collector    Analyst        Writer             Reviewer         Publisher
+                           deterministic  JSON + schema      4 checks         auto or
+                           severity       validation +                        human-approved
+                                          repair retry
+```
 
-The system is designed to:
+## Why it's built this way
 
-1. Pull weekly task updates from Notion.
-2. Use an LLM to analyze progress and identify blockers.
-3. Generate a concise executive summary.
-4. Post the summary to Slack with quality gates.
-5. Track estimated hours saved vs manual PM reporting.
+- **The LLM writes, the code decides.** Severity and confidence are computed deterministically (`server/analysis.ts`) and passed to the model as ground truth. The model only writes the narrative and actions, so the gates stay stable across runs and providers.
+- **Structured output with a repair loop.** The model must return JSON matching a Zod schema. If it doesn't, the validation errors go back to the model for one repair attempt. If that also fails, the run falls back to a template brief and the schema gate fails.
+- **Hallucination guard.** The grounding gate rejects any brief that mentions a project missing from the tracker, or that leaves out a high-severity risk.
+- **Human in the loop.** A failing gate holds the brief. Posting it then needs an explicit override, and the override is recorded on the run.
+- **Live, observable runs.** The server streams each phase and log line to the UI as NDJSON. Run history, timings, and gate results are persisted.
 
-## What Is Implemented in This App
+## Features
 
-- Full-stack Node.js Express backend API (`server.ts`).
-- Interactive BizOps control center UI wired to the backend API.
-- Actual AI integration using the `@google/genai` SDK to generate executive briefs from mock Notion data.
-- Agent workflow execution: Ingest -> Analyze -> Compose -> Publish.
-- Configurable run settings:
-	- cadence
-	- Notion database
-	- Slack channel
-	- model
-	- orchestration runtime (CrewAI or LangGraph)
-- Quality gates before posting:
-	- minimum confidence threshold
-	- high-severity blocker limit
-- Executive brief tab with Slack payload preview.
-- Blocker triage tab with severity, owner, age, and next action.
-- Run log tab with timeline output.
-- Hours-saved calculator with monthly and annual savings estimation.
+| | |
+|---|---|
+| **Notion ingest** | Paginates the database and fuzzy-matches property names (`Owner`/`Assignee`/`DRI`, `Due`/`Deadline`…). Handles status, select, people, number, formula, rollup, and date properties. `NOTION_PROPERTY_MAP` overrides any of these. |
+| **Risk scoring** | Blocked or at-risk state, blocker age, overdue dates, due-date pressure against progress, and not-started items near their deadline. Each risk lists the signals that drove its score. |
+| **LLM providers** | Cerebras (OpenAI-compatible, very fast) or Google Gemini, chosen per run. With no key set, a deterministic template writer is used instead. |
+| **Slack** | Block Kit message with a mrkdwn fallback. Posts with a bot token (and returns a permalink) or an incoming webhook. Without either, posts are recorded as dry runs. |
+| **Scheduler** | `SCHEDULE_CRON` runs the agent unattended. Scheduled runs auto-post only when every gate passes. |
+| **Dashboard** | Slack-style brief preview, risk triage, tracker table, live pipeline, confidence trend across runs, and a time-saved calculator. |
 
-## What Is Still Missing to Ship in Production
+## Quick start
 
-- Real API integrations and credentials flow for Notion and Slack (currently simulated in `server.ts`).
-- Secure secret management and token rotation.
-- Retry strategy and dead-letter handling for failed API operations.
-- Persistent storage for run history, confidence trends, and blocker analytics.
-- Scheduled backend runner and alerting for failed runs.
+```bash
+pnpm install
+cp .env.example .env   # every value is optional
+pnpm dev               # http://localhost:3000
+```
 
-## Suggested Real Stack
+With no keys set it runs end-to-end on demo data. Add keys one at a time:
 
-- Node.js/TypeScript backend (Express)
-- Gemini API for analysis and summary generation (`@google/genai`)
-- Notion API as the source of truth
-- Slack API for publishing
+1. **LLM:** set `CEREBRAS_API_KEY` (or `GEMINI_API_KEY`).
+2. **Notion:** create an internal integration, share your tracker database with it, then set `NOTION_TOKEN` and `NOTION_DATABASE_ID`.
+   Recommended columns: `Project` (title), `Owner` (person), `Status` (status), `Progress` (number, 0-1 or 0-100), `Blocker` (text), `Blocked Since` (date), `Due` (date), `Update` (text).
+3. **Slack:** create an app with the `chat:write` scope, invite it to the channel, then set `SLACK_BOT_TOKEN` and `SLACK_CHANNEL`. A channel ID is the most reliable value.
+4. **Automation:** for example, `SCHEDULE_CRON="45 8 * * 1"` runs every Monday at 08:45.
 
-## Local Development
+## Scoring model
 
-1. Add your `GEMINI_API_KEY` to the `.env` file.
-2. Install dependencies.
-3. Start the Vite app.
-4. Use the UI to run weekly standup analyses.
+Each open item earns points: blocked +3, at risk +2, open ≥2/3/5 days +1/+2/+3, overdue +3, due ≤7 days while flagged or below 80% +2, due ≤14 days below 50% +2, not started with a deadline inside 14 days +2. A score of 6 or more is **high**, 3 or more is **medium**, and 2 is **low**.
 
-Example commands:
+`confidence = 100 − Σ(high 10, medium 5, low 2) + 10 × completion ratio`. Health is Green at 80 or above, Yellow at 65 or above, and Red below that.
 
-- `npm install`
-- `npm run dev`
+## API
+
+| Method | Path | |
+|---|---|---|
+| `GET` | `/api/status` | Integration status, schedule, default settings |
+| `GET` | `/api/tasks` | Current tracker items |
+| `POST` | `/api/runs` | Start a run and stream NDJSON events. Body: `{ settings }` |
+| `GET` | `/api/runs` · `/api/runs/:id` | Run history and run detail |
+| `POST` | `/api/runs/:id/publish` | Publish a run. Held runs need `{ "override": true }` |
+
+When `ADMIN_TOKEN` is set, the `POST` routes require an `x-admin-token` header.
+
+## Development
+
+```bash
+pnpm test        # Vitest: scoring, gates, Notion mapping, LLM repair loop, Slack blocks
+pnpm typecheck
+pnpm build && pnpm start
+```
+
+Project layout: `server/` (config, notion, analysis, llm, slack, pipeline, store, scheduler), `server.ts` (Express routes plus Vite middleware), `src/` (React dashboard), `src/shared/types.ts` (types shared by client and server), `tests/`.
+
+Stack: TypeScript, Node/Express 5, React 19, Vite, Tailwind v4, Zod, Vitest, Notion API, Slack Web API, Cerebras, Gemini.

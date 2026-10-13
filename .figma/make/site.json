@@ -1,5 +1,6 @@
 {
-  "description": "Automates weekly task updates by analyzing Notion data and posting executive summaries to Slack, saving project managers time and highlighting blockers.",
+  "title": "BizOps Standup Agent",
+  "description": "AI agent that reads a Notion project tracker, scores delivery risk, writes a schema-validated executive brief with Cerebras or Gemini, and posts it to Slack behind quality gates.",
   "robots": {
     "index": false
   },
