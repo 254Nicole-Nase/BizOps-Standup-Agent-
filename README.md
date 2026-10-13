@@ -77,7 +77,7 @@ Each open item earns points: blocked +3, at risk +2, open ≥2/3/5 days +1/+2/+3
 | `GET` | `/api/runs` · `/api/runs/:id` | Run history and run detail |
 | `POST` | `/api/runs/:id/publish` | Publish a run. Held runs need `{ "override": true }` |
 
-When `ADMIN_TOKEN` is set, the `POST` routes require an `x-admin-token` header.
+When `ADMIN_TOKEN` is set, every route except `/api/health` requires an `x-admin-token` header.
 
 ## Development
 
